@@ -1,3 +1,18 @@
+const fs = require("fs");
+const path = require("path");
+const Database = require("better-sqlite3");
+
+const DB_PATH = process.env.SQLITE_PATH || "./aguipuntos.db";
+
+// crear carpeta si no existe
+const dir = path.dirname(DB_PATH);
+if (!fs.existsSync(dir)) {
+  fs.mkdirSync(dir, { recursive: true });
+}
+
+const db = new Database(DB_PATH);
+
+
 const Database = require("better-sqlite3");
 const DB_PATH = process.env.SQLITE_PATH || "./aguipuntos.db";
 const db = new Database(DB_PATH);
