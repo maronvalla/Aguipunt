@@ -59,4 +59,56 @@ router.post("/login", (req, res) => {
   });
 });
 
+// TEMPORAL: eliminar luego
+router.post("/bootstrap-admin", (req, res) => {
+  const secret = String(req.body?.secret || "");
+  if (secret !== String(process.env.BOOTSTRAP_SECRET || "")) {
+    return res.status(403).json({ message: "Forbidden." });
+  }
+
+  const username = String(req.body?.username || "Admin").trim() || "Admin";
+  const password = String(req.body?.password || "");
+  if (!password) {
+    return res.status(400).json({ message: "Password requerido." });
+  }
+
+  try {
+    const cols = db
+      .prepare("PRAGMA table_info(users)")
+      .all()
+      .map((r) => r.name);
+    if (!cols.includes("role")) {
+      db.run("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'admin'");
+    }
+  } catch (err) {
+    return res.status(500).json({ message: "Error al preparar usuario." });
+  }
+
+  const hashed = bcrypt.hashSync(password, 10);
+  const existing = db.get("SELECT id FROM users WHERE username = ?", [username]);
+  if (existing?.id) {
+    db.run(
+      "UPDATE users SET password = ?, role = 'admin' WHERE id = ?",
+      [hashed, existing.id],
+      (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Error al actualizar." });
+        }
+        return res.json({ ok: true, username });
+      }
+    );
+  } else {
+    db.run(
+      "INSERT INTO users (username, password, role) VALUES (?, ?, 'admin')",
+      [username, hashed],
+      (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Error al crear." });
+        }
+        return res.json({ ok: true, username });
+      }
+    );
+  }
+});
+
 module.exports = router;
