@@ -20,28 +20,35 @@ export default function Login() {
     }
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    login();
+  };
+
   return (
     <div className="min-h-screen bg-blue-500 flex items-center justify-center">
       <div className="bg-white p-6 rounded w-80 space-y-3">
-        <input
-          className="border w-full p-2"
-          placeholder="Usuario"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-        <input
-          className="border w-full p-2"
-          type="password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button
-          className="bg-blue-500 text-white w-full p-2 rounded"
-          onClick={login}
-        >
-          Ingresar
-        </button>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            className="border w-full p-2"
+            placeholder="Usuario"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          <input
+            className="border w-full p-2"
+            type="password"
+            placeholder="Contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button
+            type="submit"
+            className="bg-blue-500 text-white w-full p-2 rounded"
+          >
+            Ingresar
+          </button>
+        </form>
       </div>
     </div>
   );
