@@ -10,11 +10,14 @@ const isBcryptHash = (value) => {
 };
 
 router.post("/login", (req, res) => {
+  const timingEnabled = process.env.NODE_ENV !== "production";
+  if (timingEnabled) console.time("login");
   try {
     const username = String(req.body?.username || "").trim();
     const password = String(req.body?.password || "");
 
     if (!username || !password) {
+      if (timingEnabled) console.timeEnd("login");
       return res
         .status(400)
         .json({ message: "Usuario y contraseña requeridos." });
@@ -23,28 +26,21 @@ router.post("/login", (req, res) => {
     db.get("SELECT * FROM users WHERE username = ?", [username], (err, user) => {
       if (err) {
         console.error("Login DB error:", err);
+        if (timingEnabled) console.timeEnd("login");
         if (res.headersSent) return;
         return res.status(500).json({ message: "Error al iniciar sesión." });
       }
       if (!user) {
+        if (timingEnabled) console.timeEnd("login");
         return res.status(401).json({ message: "Credenciales inválidas." });
       }
 
-      let passwordOk = false;
-      if (isBcryptHash(user.password)) {
-        passwordOk = bcrypt.compareSync(password, user.password);
-      } else {
-        passwordOk = user.password === password;
-        if (passwordOk) {
-          const hashed = bcrypt.hashSync(password, 10);
-          db.run("UPDATE users SET password = ? WHERE id = ?", [
-            hashed,
-            user.id,
-          ]);
-        }
-      }
+      const passwordOk = isBcryptHash(user.password)
+        ? bcrypt.compareSync(password, user.password)
+        : user.password === password;
 
       if (!passwordOk) {
+        if (timingEnabled) console.timeEnd("login");
         return res.status(401).json({ message: "Credenciales inválidas." });
       }
 
@@ -62,9 +58,11 @@ router.post("/login", (req, res) => {
         token,
         role,
       });
+      if (timingEnabled) console.timeEnd("login");
     });
   } catch (err) {
     console.error("Login error:", err);
+    if (timingEnabled) console.timeEnd("login");
     if (res.headersSent) return;
     return res.status(500).json({ message: "Error al iniciar sesión." });
   }

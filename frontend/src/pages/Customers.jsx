@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
@@ -12,8 +12,14 @@ export default function Customers() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const activeRequest = useRef(null);
 
   const fetchCustomers = async () => {
+    if (activeRequest.current) {
+      activeRequest.current.abort();
+    }
+    const controller = new AbortController();
+    activeRequest.current = controller;
     setLoading(true);
     setError("");
     try {
@@ -21,7 +27,12 @@ export default function Customers() {
       if (search.trim()) params.set("search", search.trim());
       params.set("limit", String(PAGE_SIZE));
       params.set("offset", String(offset));
-      const res = await api.get(`/api/customers/customers?${params.toString()}`);
+      const res = await api.get(`/api/customers/customers?${params.toString()}`, {
+        signal: controller.signal,
+      });
+      if (activeRequest.current === controller) {
+        activeRequest.current = null;
+      }
       setItems(res.data.items || []);
       if (typeof res.data.total === "number") {
         setTotal(res.data.total);
@@ -29,6 +40,9 @@ export default function Customers() {
         setTotal(null);
       }
     } catch (e) {
+      if (e?.name === "CanceledError" || e?.code === "ERR_CANCELED") {
+        return;
+      }
       setItems([]);
       setTotal(null);
       setError(e?.response?.data?.message || "Error al buscar clientes.");
@@ -40,8 +54,13 @@ export default function Customers() {
   useEffect(() => {
     const handle = setTimeout(() => {
       fetchCustomers();
-    }, 300);
-    return () => clearTimeout(handle);
+    }, 350);
+    return () => {
+      clearTimeout(handle);
+      if (activeRequest.current) {
+        activeRequest.current.abort();
+      }
+    };
   }, [search, offset]);
 
   const hasPrev = offset > 0;

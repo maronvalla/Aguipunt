@@ -25,6 +25,15 @@ db.exec(`
   );
 `);
 
+// Performance indexes
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_customers_dni ON customers(dni);
+  CREATE INDEX IF NOT EXISTS idx_customers_nombre ON customers(nombre);
+  CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+  CREATE INDEX IF NOT EXISTS idx_transactions_customerId ON transactions(customerId);
+  CREATE INDEX IF NOT EXISTS idx_prizes_id ON prizes(id);
+`);
+
 // Seed default admin only if table is empty
 try {
   const row = db.prepare("SELECT COUNT(1) AS count FROM users").get();

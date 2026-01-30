@@ -16,9 +16,9 @@ router.get("/customers", requireRole("admin"), (req, res) => {
   const offset = Number.isFinite(offsetRaw) && offsetRaw >= 0 ? offsetRaw : 0;
 
   const where = search
-    ? "WHERE lower(nombre) LIKE ? OR lower(dni) LIKE ?"
+    ? "WHERE nombre LIKE ? COLLATE NOCASE OR dni LIKE ? COLLATE NOCASE"
     : "";
-  const like = `%${search.toLowerCase()}%`;
+  const like = `%${search}%`;
   const params = search ? [like, like, limit, offset] : [limit, offset];
 
   db.all(
