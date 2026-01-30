@@ -2,6 +2,7 @@
 const fs = require("fs");
 const path = require("path");
 const Database = require("better-sqlite3");
+const bcrypt = require("bcryptjs");
 
 const DB_PATH = process.env.SQLITE_PATH || "./aguipuntos.db";
 
@@ -23,6 +24,20 @@ db.exec(`
     role TEXT NOT NULL DEFAULT 'admin'
   );
 `);
+
+// Seed default admin only if table is empty
+try {
+  const row = db.prepare("SELECT COUNT(1) AS count FROM users").get();
+  if (row && row.count === 0) {
+    const hashed = bcrypt.hashSync("admin", 10);
+    db.prepare(
+      "INSERT INTO users (username, password, role) VALUES (?, ?, 'admin')"
+    ).run("admin", hashed);
+  }
+} catch (err) {
+  // Keep startup resilient; auth will surface DB issues if any
+  console.error("DB seed error:", err);
+}
 
 // Helpers compatibles con el estilo sqlite3 (callbacks)
 function run(sql, params = [], cb) {
