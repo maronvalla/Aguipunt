@@ -4,15 +4,14 @@ const path = require("path");
 const Database = require("better-sqlite3");
 const bcrypt = require("bcryptjs");
 
-const DB_PATH = process.env.SQLITE_PATH || "./aguipuntos.db";
+const DB_PATH =
+  process.env.DB_PATH || path.join(__dirname, "data", "aguipuntos.db");
 
 // Asegurar que exista el directorio donde vive la DB (ej: /data en Railway)
-const dir = path.dirname(DB_PATH);
-if (dir && dir !== "." && !fs.existsSync(dir)) {
-  fs.mkdirSync(dir, { recursive: true });
-}
+fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
 // Abrir DB
+console.log("[db] using DB_PATH:", DB_PATH);
 const db = new Database(DB_PATH);
 
 // Ensure required tables exist
