@@ -6,13 +6,26 @@ const bcrypt = require("bcryptjs");
 
 const DB_PATH =
   process.env.DB_PATH || path.join(__dirname, "data", "aguipuntos.db");
+const FALLBACK_DB_PATH = path.join(__dirname, "data", "aguipuntos.db");
 
-// Asegurar que exista el directorio donde vive la DB (ej: /data en Railway)
-fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-
-// Abrir DB
-console.log("[db] using DB_PATH:", DB_PATH);
-const db = new Database(DB_PATH);
+// Abrir DB con fallback
+let db;
+let finalPath = DB_PATH;
+try {
+  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+  db = new Database(DB_PATH);
+} catch (err) {
+  console.error("[db] open failed:", err);
+  try {
+    fs.mkdirSync(path.dirname(FALLBACK_DB_PATH), { recursive: true });
+    db = new Database(FALLBACK_DB_PATH);
+    finalPath = FALLBACK_DB_PATH;
+  } catch (fallbackErr) {
+    console.error("[db] fallback open failed:", fallbackErr);
+    throw fallbackErr;
+  }
+}
+console.log("[db] using:", finalPath);
 
 // Ensure required tables exist
 db.exec(`
