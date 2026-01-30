@@ -69,4 +69,5 @@ app.use((_req, res) => {
 // ---------- Error handler ----------
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);
-  res.status(500).json({ message: "Int
+  res.status(500).json({ message: "Internal server error" });
+});
