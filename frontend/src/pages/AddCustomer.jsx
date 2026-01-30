@@ -8,7 +8,7 @@ export default function AddCustomer() {
 
   const submit = async () => {
     try {
-      const res = await api.post("/customers", {
+      const res = await api.post("/api/customers/customers", {
         numeroDNI,
         nombreYApellido,
         numeroCelular,

@@ -21,7 +21,7 @@ export default function Customers() {
       if (search.trim()) params.set("search", search.trim());
       params.set("limit", String(PAGE_SIZE));
       params.set("offset", String(offset));
-      const res = await api.get(`/customers?${params.toString()}`);
+      const res = await api.get(`/api/customers/customers?${params.toString()}`);
       setItems(res.data.items || []);
       if (typeof res.data.total === "number") {
         setTotal(res.data.total);

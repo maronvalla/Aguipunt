@@ -56,7 +56,7 @@ export default function Reports() {
       if (to) params.set("to", to);
       if (userId.trim()) params.set("userId", userId.trim());
       const res = await api.get(
-        `/reports/points-loaded?${params.toString()}`
+        `/api/reports/reports/points-loaded?${params.toString()}`
       );
       setTotals(
         res.data.totals || {
@@ -87,7 +87,7 @@ export default function Reports() {
 
   const confirmVoid = async () => {
     try {
-      await api.post(`/transactions/${voidTargetId}/void`, {
+      await api.post(`/api/transactions/transactions/${voidTargetId}/void`, {
         reason: voidReason,
       });
       setShowVoidModal(false);

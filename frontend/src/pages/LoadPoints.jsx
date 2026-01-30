@@ -29,7 +29,7 @@ export default function LoadPoints() {
     setTxError("");
     try {
       const res = await api.get(
-        `/customers/${customerId}/transactions?limit=10`
+        `/api/customers/customers/${customerId}/transactions?limit=10`
       );
       setTransactions(res.data?.items || []);
     } catch (e) {
@@ -48,7 +48,7 @@ export default function LoadPoints() {
     setError("");
     setMessage("");
     try {
-      const res = await api.get(`/customers/${dni}`);
+      const res = await api.get(`/api/customers/customers/${dni}`);
       setSelectedCustomerId(res.data.id);
       setCurrentPoints(res.data.puntos);
       fetchTransactions(res.data.id);
@@ -77,7 +77,7 @@ export default function LoadPoints() {
       operations: operacionesNumber,
     };
     try {
-      const res = await api.post("/points/load", body);
+      const res = await api.post("/api/points/points/load", body);
       setCurrentPoints(res.data.newPoints);
       setMessage(
         `${res.data.message} Nuevo total: ${res.data.newPoints} puntos.`

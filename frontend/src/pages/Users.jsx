@@ -36,7 +36,7 @@ export default function Users() {
     setLoading(true);
     setError("");
     try {
-      const res = await api.get("/users");
+      const res = await api.get("/api/users/users");
       setUsers(res.data || []);
     } catch (err) {
       setError(err?.response?.data?.message || "Error al cargar usuarios.");
@@ -70,7 +70,7 @@ export default function Users() {
         password,
         role,
       };
-      const res = await fetch(`${API_BASE}/users`, {
+      const res = await fetch(`${API_BASE}/api/users/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -101,7 +101,7 @@ export default function Users() {
     setError("");
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/users/${user.id}`, {
+      const res = await fetch(`${API_BASE}/api/users/users/${user.id}`, {
         method: "DELETE",
         headers: {
           Authorization: token ? `Bearer ${token}` : "",
@@ -145,7 +145,7 @@ export default function Users() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `${API_BASE}/users/${passwordUser.id}/password`,
+        `${API_BASE}/api/users/users/${passwordUser.id}/password`,
         {
           method: "PATCH",
           headers: {

@@ -31,7 +31,9 @@ export default function RedeemPrize() {
     if (!id) return;
     setTxError("");
     try {
-      const res = await api.get(`/customers/${id}/transactions?limit=10`);
+      const res = await api.get(
+        `/api/customers/customers/${id}/transactions?limit=10`
+      );
       setTransactions(res.data?.items || []);
     } catch (e) {
       setTransactions([]);
@@ -46,7 +48,7 @@ export default function RedeemPrize() {
     setError("");
     setMessage("");
     try {
-      const res = await api.get(`/customers/${dni}`);
+      const res = await api.get(`/api/customers/customers/${dni}`);
       setCustomerId(res.data.id);
       setCurrentPoints(res.data.puntos);
       fetchTransactions(res.data.id);
@@ -60,7 +62,7 @@ export default function RedeemPrize() {
 
   const fetchPrizes = async () => {
     try {
-      const res = await api.get("/prizes");
+      const res = await api.get("/api/prizes/prizes");
       setPrizes(res.data || []);
       if (!premioId && res.data?.length) {
         setPremioId(String(res.data[0].id));
@@ -78,7 +80,7 @@ export default function RedeemPrize() {
     setError("");
     setMessage("");
     try {
-      const res = await api.post("/prizes/redeem", {
+      const res = await api.post("/api/prizes/prizes/redeem", {
         dni,
         premioId: Number(premioId),
       });
@@ -98,7 +100,7 @@ export default function RedeemPrize() {
     setError("");
     setMessage("");
     try {
-      const res = await api.post("/points/redeem-custom", {
+      const res = await api.post("/api/points/points/redeem-custom", {
         dni,
         pointsToRedeem: Number(customPoints),
         note: customNote,
@@ -143,12 +145,12 @@ export default function RedeemPrize() {
     }
     try {
       if (editingPrizeId) {
-        await api.put(`/prizes/${editingPrizeId}`, {
+        await api.put(`/api/prizes/prizes/${editingPrizeId}`, {
           nombre,
           costo_puntos: costo,
         });
       } else {
-        await api.post("/prizes", { nombre, costo_puntos: costo });
+        await api.post("/api/prizes/prizes", { nombre, costo_puntos: costo });
       }
       setShowAddPrize(false);
       resetPrizeForm();
@@ -170,7 +172,7 @@ export default function RedeemPrize() {
     if (!ok) return;
     setPrizeError("");
     try {
-      await api.delete(`/prizes/${prize.id}`);
+      await api.delete(`/api/prizes/prizes/${prize.id}`);
       fetchPrizes();
       if (editingPrizeId === prize.id) {
         resetPrizeForm();

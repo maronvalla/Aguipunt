@@ -21,7 +21,7 @@ export default function CustomerDetail() {
   const fetchCustomer = async () => {
     setError("");
     try {
-      const res = await api.get(`/customers/by-id/${id}`);
+      const res = await api.get(`/api/customers/customers/by-id/${id}`);
       setCustomer(res.data);
     } catch (e) {
       setCustomer(null);
@@ -42,7 +42,7 @@ export default function CustomerDetail() {
       if (from) params.set("from", from);
       if (to) params.set("to", to);
       const res = await api.get(
-        `/customers/${id}/transactions?${params.toString()}`
+        `/api/customers/customers/${id}/transactions?${params.toString()}`
       );
       const newItems = res.data.items || [];
       setHasMore(Boolean(res.data.hasMore));
@@ -80,7 +80,7 @@ export default function CustomerDetail() {
       if (to) params.set("to", to);
       params.set("format", "csv");
       const res = await api.get(
-        `/customers/${id}/transactions/export?${params.toString()}`,
+        `/api/customers/customers/${id}/transactions/export?${params.toString()}`,
         { responseType: "blob" }
       );
       const blob = new Blob([res.data], { type: "text/csv;charset=utf-8;" });

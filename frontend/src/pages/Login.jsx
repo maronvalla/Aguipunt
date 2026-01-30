@@ -7,7 +7,7 @@ export default function Login() {
 
   const login = async () => {
     try {
-const res = await api.post("/login", { username, password });
+const res = await api.post("/api/auth/login", { username, password });
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.role || "admin");
       window.location.href = "/menu";
