@@ -8,7 +8,7 @@ const authRoutes = require("./routes/auth");
 const customersRoutes = require("./routes/customers");
 const pointsRoutes = require("./routes/points");
 const prizesRoutes = require("./routes/prizes");
-const usersRoutes = require("./routes/users"); // si existe
+const usersRoutes = require("./routes/users");
 
 const requireAuth = require("./middleware/auth");
 
@@ -17,46 +17,42 @@ const app = express();
 // ---------- Middlewares base ----------
 app.use(express.json());
 
-// ---------- CORS (UNA sola vez, consistente) ----------
-// En prod: setear CORS_ORIGIN como lista separada por comas
-// Ej: CORS_ORIGIN=https://aguipunt.vercel.app,https://otro-dominio.com
-const corsOrigins = (process.env.CORS_ORIGIN || "")
+// ---------- CORS (una sola vez) ----------
+const envOrigins = (process.env.CORS_ORIGIN || "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
 
-// En dev, permitir localhost
 const devOrigins = ["http://localhost:5173", "http://localhost:5174"];
+const allowedOrigins = envOrigins.length ? envOrigins : devOrigins;
 
-const allowedOrigins = corsOrigins.length ? corsOrigins : devOrigins;
+const corsOptions = {
+  origin: (origin, cb) => {
+    // Permitir requests sin Origin (curl/postman/healthchecks)
+    if (!origin) return cb(null, true);
 
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      // Permite requests sin Origin (curl/postman/healthchecks)
-      if (!origin) return cb(null, true);
+    // Permitir solo los orígenes aprobados
+    if (allowedOrigins.includes(origin)) return cb(null, true);
 
-      if (allowedOrigins.includes(origin)) return cb(null, true);
-      return cb(new Error(`CORS blocked for origin: ${origin}`));
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: false, // si no usás cookies, dejalo false (JWT en header)
-  })
-);
+    // NO tirar error (evita comportamientos raros/restarts). Simplemente bloquear.
+    return cb(null, false);
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: false, // JWT por header, no cookies
+};
 
-// Responder preflight
-app.options("*", cors());
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // ---------- Rutas públicas ----------
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, time: new Date().toISOString() });
+  res.status(200).json({ ok: true, time: new Date().toISOString() });
 });
 
-// Auth PUBLICO
 app.use("/api/auth", authRoutes);
 
-// ---------- Middleware de auth para el resto ----------
+// ---------- Auth para el resto ----------
 app.use("/api", requireAuth);
 
 // ---------- Rutas protegidas ----------
@@ -73,10 +69,4 @@ app.use((_req, res) => {
 // ---------- Error handler ----------
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);
-  res.status(500).json({ message: "Internal server error" });
-});
-
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Backend corriendo en http://localhost:${PORT}`);
-});
+  res.status(500).json({ message: "Int
