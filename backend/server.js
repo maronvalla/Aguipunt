@@ -36,6 +36,20 @@ app.use(
   })
 );
 
+import cors from "cors";
+
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://aguipunt.vercel.app"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+app.options("*", cors());
+
+
 // ---------- Rutas públicas ----------
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
