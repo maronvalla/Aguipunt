@@ -13,7 +13,7 @@ router.post("/points/load", (req, res) => {
   if (!Number.isFinite(puntos) || puntos <= 0) {
     return res
       .status(400)
-      .json({ message: "Puntos invÃ¡lidos. Deben ser mayores a 0." });
+      .json({ message: "Puntos inválidos. Deben ser mayores a 0." });
   }
 
   db.get(
@@ -73,7 +73,7 @@ router.post("/points/redeem-custom", (req, res) => {
   if (!Number.isFinite(puntos) || puntos <= 0 || !Number.isInteger(puntos)) {
     return res
       .status(400)
-      .json({ message: "Puntos invÃ¡lidos. Deben ser mayor a 0." });
+      .json({ message: "Puntos inválidos. Deben ser mayor a 0." });
   }
 
   db.get(

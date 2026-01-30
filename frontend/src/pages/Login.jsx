@@ -32,7 +32,7 @@ export default function Login() {
         <input
           className="border w-full p-2"
           type="password"
-          placeholder="ContraseÃ±a"
+          placeholder="Contraseña"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />

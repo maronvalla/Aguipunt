@@ -64,11 +64,11 @@ export default function LoadPoints() {
     setError("");
     setMessage("");
     if (!isCustomerLoaded) {
-      setError("Primero buscÃ¡ y cargÃ¡ el cliente.");
+      setError("Primero buscá y cargá el cliente.");
       return;
     }
     if (!isOperacionesValid) {
-      setError("Las operaciones deben ser un nÃºmero entero mayor a 0.");
+      setError("Las operaciones deben ser un número entero mayor a 0.");
       return;
     }
     const body = {
@@ -128,7 +128,7 @@ export default function LoadPoints() {
           Puntos a cargar:{" "}
           <span className="font-semibold">{pointsCalculated}</span>{" "}
           <span className="text-xs text-gray-500">
-            (50 puntos por operaciÃ³n)
+            (50 puntos por operación)
           </span>
         </div>
 
@@ -162,7 +162,7 @@ export default function LoadPoints() {
         {isAdmin && (
           <div className="pt-2 border-t border-gray-200">
             <div className="text-sm font-semibold text-gray-700 mb-2">
-              Ãšltimos movimientos
+              Últimos movimientos
             </div>
             {txError && (
               <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded p-2">

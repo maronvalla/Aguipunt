@@ -55,11 +55,11 @@ export default function Users() {
     setSuccess("");
 
     if (!username.trim() || username.trim().length < 3) {
-      setFormError("Usuario invÃ¡lido (3-30 caracteres)." );
+      setFormError("Usuario inválido (3-30 caracteres)." );
       return;
     }
     if (!password || password.length < 4) {
-      setFormError("ContraseÃ±a invÃ¡lida (mÃ­nimo 4)." );
+      setFormError("Contraseña inválida (mínimo 4)." );
       return;
     }
 
@@ -138,7 +138,7 @@ export default function Users() {
     setPasswordSuccess("");
 
     if (!newPassword || newPassword.length < 4) {
-      setPasswordError("ContraseÃ±a invÃ¡lida (mÃ­nimo 4).");
+      setPasswordError("Contraseña inválida (mínimo 4).");
       return;
     }
 
@@ -159,12 +159,12 @@ export default function Users() {
         await handleErrorResponse(res, setPasswordError);
         return;
       }
-      setPasswordSuccess("ContraseÃ±a actualizada.");
+      setPasswordSuccess("Contraseña actualizada.");
       setNewPassword("");
       fetchUsers();
     } catch (err) {
-      console.error("Error actualizando contraseÃ±a", err);
-      setPasswordError(err?.message || "Error al actualizar contraseÃ±a.");
+      console.error("Error actualizando contraseña", err);
+      setPasswordError(err?.message || "Error al actualizar contraseña.");
     }
   };
 
@@ -173,7 +173,7 @@ export default function Users() {
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
           <h1 className="text-lg font-semibold text-slate-800">Usuarios</h1>
-          <p className="text-xs text-slate-500">AdministraciÃ³n de accesos</p>
+          <p className="text-xs text-slate-500">Administración de accesos</p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
@@ -188,7 +188,7 @@ export default function Users() {
             <input
               className="border border-slate-300 rounded w-full px-3 py-2 text-sm"
               type="password"
-              placeholder="ContraseÃ±a"
+              placeholder="Contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -248,7 +248,7 @@ export default function Users() {
                         className="text-sm text-slate-600 hover:text-slate-800"
                         onClick={() => openPasswordModal(u)}
                       >
-                        Cambiar contraseÃ±a
+                        Cambiar contraseña
                       </button>
                       <button
                         className="text-sm text-rose-600 hover:text-rose-700"
@@ -277,7 +277,7 @@ export default function Users() {
           <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-5">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-800">
-                Cambiar contraseÃ±a
+                Cambiar contraseña
               </h3>
               <button
                 className="text-slate-500 hover:text-slate-700"
@@ -293,7 +293,7 @@ export default function Users() {
               <input
                 className="border border-slate-300 rounded w-full px-3 py-2 text-sm"
                 type="password"
-                placeholder="Nueva contraseÃ±a"
+                placeholder="Nueva contraseña"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />

@@ -140,7 +140,7 @@ export default function RedeemPrize() {
       return;
     }
     if (!Number.isInteger(costo) || costo <= 0) {
-      setPrizeError("Puntos requeridos invÃ¡lidos.");
+      setPrizeError("Puntos requeridos inválidos.");
       return;
     }
     try {
@@ -200,7 +200,7 @@ export default function RedeemPrize() {
               className="text-xs text-blue-700 hover:underline"
               onClick={() => setShowAddPrize(true)}
             >
-              AÃ±adir premio
+              Añadir premio
             </button>
           )}
         </div>
@@ -302,7 +302,7 @@ export default function RedeemPrize() {
         {isAdmin && (
           <div className="pt-2 border-t border-gray-200">
             <div className="text-sm font-semibold text-gray-700 mb-2">
-              Ãšltimos movimientos
+              Últimos movimientos
             </div>
             {txError && (
               <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded p-2">
@@ -354,7 +354,7 @@ export default function RedeemPrize() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-4 w-full max-w-sm space-y-3">
             <div className="text-sm font-semibold">
-              {editingPrizeId ? "Editar premio" : "AÃ±adir premio"}
+              {editingPrizeId ? "Editar premio" : "Añadir premio"}
             </div>
             <input
               className="border w-full p-2 rounded"

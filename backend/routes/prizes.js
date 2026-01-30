@@ -22,7 +22,7 @@ router.post("/prizes", requireRole("admin"), (req, res) => {
   if (!Number.isFinite(costo) || costo <= 0 || !Number.isInteger(costo)) {
     return res
       .status(400)
-      .json({ message: "Puntos requeridos invÃ¡lidos." });
+      .json({ message: "Puntos requeridos inválidos." });
   }
 
   db.run(
@@ -40,13 +40,13 @@ router.put("/prizes/:id", requireRole("admin"), (req, res) => {
   const costo = Number(req.body?.costo_puntos);
 
   if (!Number.isFinite(id) || id <= 0) {
-    return res.status(400).json({ message: "ID invÃ¡lido." });
+    return res.status(400).json({ message: "ID inválido." });
   }
   if (!nombre) {
     return res.status(400).json({ message: "Nombre requerido." });
   }
   if (!Number.isFinite(costo) || costo <= 0 || !Number.isInteger(costo)) {
-    return res.status(400).json({ message: "Puntos requeridos invÃ¡lidos." });
+    return res.status(400).json({ message: "Puntos requeridos inválidos." });
   }
 
   db.run(
@@ -64,7 +64,7 @@ router.put("/prizes/:id", requireRole("admin"), (req, res) => {
 router.delete("/prizes/:id", requireRole("admin"), (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id) || id <= 0) {
-    return res.status(400).json({ message: "ID invÃ¡lido." });
+    return res.status(400).json({ message: "ID inválido." });
   }
 
   db.run("DELETE FROM prizes WHERE id = ?", [id], function () {
@@ -86,7 +86,7 @@ const redeemHandler = (req, res) => {
   if (!Number.isFinite(prizeId) || prizeId <= 0) {
     return res
       .status(400)
-      .json({ message: "Premio invÃ¡lido. Debe ser mayor a 0." });
+      .json({ message: "Premio inválido. Debe ser mayor a 0." });
   }
 
   db.get("SELECT * FROM customers WHERE dni = ?", [dni], (err, customer) => {

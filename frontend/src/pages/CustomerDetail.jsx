@@ -252,7 +252,7 @@ export default function CustomerDetail() {
             disabled={!hasMore || loading}
             onClick={() => fetchTransactions(false)}
           >
-            Cargar mÃ¡s
+            Cargar más
           </button>
         </div>
       </div>

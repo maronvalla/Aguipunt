@@ -27,12 +27,12 @@ router.post("/users", requireRole("admin"), (req, res) => {
   if (!username || username.length < 3 || username.length > 30) {
     return res
       .status(400)
-      .json({ message: "Usuario invÃ¡lido (3-30 caracteres)." });
+      .json({ message: "Usuario inválido (3-30 caracteres)." });
   }
   if (!password || password.length < 4) {
     return res
       .status(400)
-      .json({ message: "ContraseÃ±a invÃ¡lida (mÃ­nimo 4)." });
+      .json({ message: "Contraseña inválida (mínimo 4)." });
   }
 
   db.get("SELECT id FROM users WHERE username = ?", [username], (err, existing) => {
@@ -59,12 +59,12 @@ router.patch("/users/:id/password", requireRole("admin"), (req, res) => {
   const password = String(req.body?.password || "");
 
   if (!Number.isFinite(id) || id <= 0) {
-    return res.status(400).json({ message: "ID invÃ¡lido." });
+    return res.status(400).json({ message: "ID inválido." });
   }
   if (!password || password.length < 4) {
     return res
       .status(400)
-      .json({ message: "ContraseÃ±a invÃ¡lida (mÃ­nimo 4)." });
+      .json({ message: "Contraseña inválida (mínimo 4)." });
   }
 
   const hashed = bcrypt.hashSync(password, 10);
@@ -83,7 +83,7 @@ router.patch("/users/:id/password", requireRole("admin"), (req, res) => {
 router.delete("/users/:id", requireRole("admin"), (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id) || id <= 0) {
-    return res.status(400).json({ message: "ID invÃ¡lido." });
+    return res.status(400).json({ message: "ID inválido." });
   }
 
   db.run("DELETE FROM users WHERE id = ?", [id], function () {

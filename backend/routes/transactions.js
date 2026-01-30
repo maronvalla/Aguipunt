@@ -11,7 +11,7 @@ router.post(
     const reason = String(req.body?.reason || "").trim();
 
     if (!Number.isFinite(id) || id <= 0) {
-      return res.status(400).json({ message: "TransacciÃ³n invÃ¡lida." });
+      return res.status(400).json({ message: "Transacción inválida." });
     }
 
     db.get(
@@ -19,16 +19,16 @@ router.post(
       [id],
       (err, tx) => {
         if (err) {
-          return res.status(500).json({ message: "Error al buscar transacciÃ³n." });
+          return res.status(500).json({ message: "Error al buscar transacción." });
         }
         if (!tx) {
-          return res.status(404).json({ message: "TransacciÃ³n no encontrada." });
+          return res.status(404).json({ message: "Transacción no encontrada." });
         }
         if (tx.type !== "LOAD") {
           return res.status(400).json({ message: "Solo se puede anular cargas." });
         }
         if (tx.voidedAt) {
-          return res.status(400).json({ message: "La carga ya estÃ¡ anulada." });
+          return res.status(400).json({ message: "La carga ya está anulada." });
         }
 
         db.get(
@@ -43,7 +43,7 @@ router.post(
             const newPoints = customer.puntos + deltaPoints;
             const voidedByUserId = req.user?.id ?? null;
             const voidedByUserName = req.user?.username ?? null;
-            const note = `AnulaciÃ³n de carga #${tx.id}${reason ? `: ${reason}` : ""}`;
+            const note = `Anulación de carga #${tx.id}${reason ? `: ${reason}` : ""}`;
 
             db.run(
               "UPDATE customers SET puntos = ? WHERE id = ?",

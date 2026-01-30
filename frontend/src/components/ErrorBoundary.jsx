@@ -27,7 +27,7 @@ export default class ErrorBoundary extends React.Component {
               {this.state.error?.message || "Error inesperado."}
             </div>
             <div className="mt-3 text-xs text-slate-500">
-              RevisÃ¡ la consola para mÃ¡s detalles.
+              Revisá la consola para más detalles.
             </div>
           </div>
         </div>

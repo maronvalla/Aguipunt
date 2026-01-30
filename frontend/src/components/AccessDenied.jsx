@@ -6,10 +6,10 @@ export default function AccessDenied() {
           Acceso denegado
         </div>
         <div className="text-slate-600">
-          No tenÃ©s permisos para ver esta secciÃ³n.
+          No tenés permisos para ver esta sección.
         </div>
         <div className="mt-3 text-xs text-slate-500">
-          ContactÃ¡ a un administrador si necesitÃ¡s acceso.
+          Contactá a un administrador si necesitás acceso.
         </div>
       </div>
     </div>

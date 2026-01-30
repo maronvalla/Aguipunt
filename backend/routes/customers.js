@@ -52,7 +52,7 @@ router.get("/customers", requireRole("admin"), (req, res) => {
 router.get("/customers/by-id/:id", requireRole("admin"), (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id) || id <= 0) {
-    return res.status(400).json({ message: "Cliente invÃ¡lido." });
+    return res.status(400).json({ message: "Cliente inválido." });
   }
 
   db.get("SELECT * FROM customers WHERE id = ?", [id], (err, row) => {
@@ -75,7 +75,7 @@ router.get("/customers/by-id/:id", requireRole("admin"), (req, res) => {
 router.get("/customers/:id/transactions", requireRole("admin"), (req, res) => {
   const customerId = Number(req.params.id);
   if (!Number.isFinite(customerId) || customerId <= 0) {
-    return res.status(400).json({ message: "Cliente invÃ¡lido." });
+    return res.status(400).json({ message: "Cliente inválido." });
   }
 
   const limit = clampLimit(req.query.limit, 50, 200);
@@ -129,7 +129,7 @@ router.get(
   (req, res) => {
   const customerId = Number(req.params.id);
   if (!Number.isFinite(customerId) || customerId <= 0) {
-    return res.status(400).json({ message: "Cliente invÃ¡lido." });
+    return res.status(400).json({ message: "Cliente inválido." });
   }
 
   const type = String(req.query.type || "ALL").toUpperCase();
@@ -240,7 +240,7 @@ router.post("/customers", (req, res) => {
         "INSERT INTO customers (dni, nombre, celular) VALUES (?, ?, ?)",
         [numeroDNI, nombreYApellido, numeroCelular],
         () => {
-          res.json({ message: "Cliente aÃ±adido correctamente." });
+          res.json({ message: "Cliente añadido correctamente." });
         }
       );
     }

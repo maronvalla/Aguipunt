@@ -25,7 +25,7 @@ export default function AddCustomer() {
   return (
     <div className="min-h-screen bg-blue-500 flex items-center justify-center">
       <div className="bg-white p-6 rounded-lg shadow w-80 space-y-3">
-        <h1 className="text-lg font-semibold text-center">AÃ±adir Cliente</h1>
+        <h1 className="text-lg font-semibold text-center">Añadir Cliente</h1>
 
         <input
           className="border w-full p-2 rounded"

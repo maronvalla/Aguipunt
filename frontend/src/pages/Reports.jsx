@@ -115,7 +115,7 @@ export default function Reports() {
             value={preset}
             onChange={(e) => setPreset(e.target.value)}
           >
-            <option value="day">DÃ­a</option>
+            <option value="day">Día</option>
             <option value="week">Semana</option>
             <option value="month">Mes</option>
             <option value="custom">Personalizado</option>
