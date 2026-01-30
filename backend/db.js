@@ -48,17 +48,15 @@ function all(sql, params = [], cb) {
   }
 }
 
-// Si tu app usaba db.serialize, con better-sqlite3 no hace falta.
-// Pero para no romper código existente, lo dejamos como un wrapper.
+// Compat: algunos códigos llamaban db.serialize(fn)
 function serialize(fn) {
   if (typeof fn === "function") fn();
 }
 
 module.exports = {
-  db,        // acceso directo si lo necesitás
+  db,
   run,
   get,
   all,
   serialize,
 };
-
