@@ -1,18 +1,31 @@
 const jwt = require("jsonwebtoken");
 
 module.exports = (req, res, next) => {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ message: "Token requerido." });
+  // 🔓 RUTAS PÚBLICAS (NO requieren token)
+  const publicRoutes = [
+    "/api/auth/login",
+    "/api/auth/bootstrap-admin"
+  ];
 
-  const token = auth.split(" ")[1];
+  if (publicRoutes.includes(req.path)) {
+    return next();
+  }
 
-  jwt.verify(token, process.env.JWT_SECRET || "SECRET_KEY", (err, decoded) => {
-    if (err) return res.status(403).json({ message: "Token inválido." });
-    req.user = {
-      id: decoded?.id,
-      username: decoded?.username,
-      role: decoded?.role || "admin",
-    };
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ message: "Token requerido." });
+  }
+
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Token inválido." });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
     next();
-  });
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido." });
+  }
 };
