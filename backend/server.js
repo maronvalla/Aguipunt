@@ -14,6 +14,10 @@ const requireAuth = require("./middleware/auth");
 
 const app = express();
 
+const PORT = process.env.PORT || 3001;
+console.log("[boot] node", process.version);
+console.log("[boot] PORT", process.env.PORT);
+
 // ---------- Middlewares base ----------
 app.use(express.json());
 
@@ -70,4 +74,8 @@ app.use((_req, res) => {
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);
   res.status(500).json({ message: "Internal server error" });
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("[boot] listening", PORT);
 });
