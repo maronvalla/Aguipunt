@@ -28,23 +28,61 @@ try {
 console.log("[db] using:", finalPath);
 
 // Ensure required tables exist
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'admin'
-  );
-`);
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'admin'
+    );
+
+    CREATE TABLE IF NOT EXISTS customers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      dni TEXT UNIQUE NOT NULL,
+      nombre TEXT NOT NULL,
+      celular TEXT,
+      puntos INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS prizes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT NOT NULL,
+      costo_puntos INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      customerId INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      operations INTEGER,
+      points INTEGER NOT NULL,
+      note TEXT,
+      userId INTEGER,
+      userName TEXT,
+      voidedAt TEXT,
+      voidedByUserId INTEGER,
+      voidReason TEXT,
+      originalTransactionId INTEGER,
+      createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+} catch (err) {
+  console.error("[db] schema init failed:", err);
+}
 
 // Performance indexes
-db.exec(`
-  CREATE INDEX IF NOT EXISTS idx_customers_dni ON customers(dni);
-  CREATE INDEX IF NOT EXISTS idx_customers_nombre ON customers(nombre);
-  CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-  CREATE INDEX IF NOT EXISTS idx_transactions_customerId ON transactions(customerId);
-  CREATE INDEX IF NOT EXISTS idx_prizes_id ON prizes(id);
-`);
+try {
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_customers_dni ON customers(dni);
+    CREATE INDEX IF NOT EXISTS idx_customers_nombre ON customers(nombre);
+    CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+    CREATE INDEX IF NOT EXISTS idx_transactions_customerId ON transactions(customerId);
+    CREATE INDEX IF NOT EXISTS idx_prizes_id ON prizes(id);
+  `);
+} catch (err) {
+  console.error("[db] index init failed:", err);
+}
 
 // Seed default admin only if table is empty
 try {
