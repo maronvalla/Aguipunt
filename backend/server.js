@@ -14,68 +14,68 @@ const requireAuth = require("./middleware/auth");
 
 const app = express();
 
-const PORT = process.env.PORT || 3001;
-console.log("[boot] node", process.version);
-console.log("[boot] PORT", process.env.PORT);
-
-// ---------- Middlewares base ----------
+/* =======================
+   Middlewares base
+======================= */
 app.use(express.json());
 
-// ---------- CORS (una sola vez) ----------
-const envOrigins = (process.env.CORS_ORIGIN || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://aguipunt.vercel.app",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
-const devOrigins = ["http://localhost:5173", "http://localhost:5174"];
-const allowedOrigins = envOrigins.length ? envOrigins : devOrigins;
+// IMPORTANTE: responder preflight SIEMPRE
+app.options("*", cors());
 
-const corsOptions = {
-  origin: (origin, cb) => {
-    // Permitir requests sin Origin (curl/postman/healthchecks)
-    if (!origin) return cb(null, true);
-
-    // Permitir solo los orígenes aprobados
-    if (allowedOrigins.includes(origin)) return cb(null, true);
-
-    // NO tirar error (evita comportamientos raros/restarts). Simplemente bloquear.
-    return cb(null, false);
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: false, // JWT por header, no cookies
-};
-
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
-
-// ---------- Rutas públicas ----------
+/* =======================
+   Rutas públicas
+======================= */
 app.get("/api/health", (_req, res) => {
   res.status(200).json({ ok: true, time: new Date().toISOString() });
 });
 
+// auth público
 app.use("/api/auth", authRoutes);
 
-// ---------- Auth para el resto ----------
+/* =======================
+   Middleware JWT
+======================= */
 app.use("/api", requireAuth);
 
-// ---------- Rutas protegidas ----------
+/* =======================
+   Rutas protegidas
+======================= */
 app.use("/api/customers", customersRoutes);
 app.use("/api/points", pointsRoutes);
 app.use("/api/prizes", prizesRoutes);
 app.use("/api/users", usersRoutes);
 
-// ---------- 404 ----------
+/* =======================
+   404
+======================= */
 app.use((_req, res) => {
   res.status(404).json({ message: "Not found" });
 });
 
-// ---------- Error handler ----------
+/* =======================
+   Error handler
+======================= */
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);
   res.status(500).json({ message: "Internal server error" });
 });
 
+/* =======================
+   Start
+======================= */
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log("[boot] listening", PORT);
+  console.log(`Backend listening on port ${PORT}`);
 });
