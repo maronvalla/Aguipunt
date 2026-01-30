@@ -14,6 +14,16 @@ if (dir && dir !== "." && !fs.existsSync(dir)) {
 // Abrir DB
 const db = new Database(DB_PATH);
 
+// Ensure required tables exist
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'admin'
+  );
+`);
+
 // Helpers compatibles con el estilo sqlite3 (callbacks)
 function run(sql, params = [], cb) {
   try {
