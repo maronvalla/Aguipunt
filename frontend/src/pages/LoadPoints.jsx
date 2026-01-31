@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import api from "../api/axios";
 
 const POINTS_PER_OPERATION = 50;
@@ -8,10 +8,14 @@ export default function LoadPoints() {
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [operaciones, setOperaciones] = useState("");
   const [currentPoints, setCurrentPoints] = useState(null);
+  const [customer, setCustomer] = useState(null);
+  const [loadingLookup, setLoadingLookup] = useState(false);
+  const [lookupError, setLookupError] = useState("");
   const [transactions, setTransactions] = useState([]);
   const [txError, setTxError] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const lookupTimeoutRef = useRef(null);
 
   const operacionesNumber = Number(operaciones);
   const isOperacionesValid =
@@ -40,6 +44,61 @@ export default function LoadPoints() {
     }
   };
 
+  const lookupCustomer = async (rawDni) => {
+    const trimmedDni = rawDni.trim();
+    if (!trimmedDni || trimmedDni.length < 7) return;
+    setLoadingLookup(true);
+    setLookupError("");
+    try {
+      const res = await api.get(
+        `/api/customers/customers/${encodeURIComponent(trimmedDni)}`
+      );
+      setCustomer(res.data);
+      setSelectedCustomerId(res.data.id);
+      setCurrentPoints(res.data.puntos);
+      fetchTransactions(res.data.id);
+    } catch (e) {
+      const status = e?.response?.status;
+      setCustomer(null);
+      setSelectedCustomerId(null);
+      setCurrentPoints(null);
+      setTransactions([]);
+      if (status === 404) {
+        setLookupError("Cliente no encontrado.");
+      } else {
+        setLookupError(e?.response?.data?.message || "Error al buscar cliente.");
+      }
+    } finally {
+      setLoadingLookup(false);
+    }
+  };
+
+  useEffect(() => {
+    if (lookupTimeoutRef.current) {
+      clearTimeout(lookupTimeoutRef.current);
+    }
+    const trimmedDni = dni.trim();
+    setCustomer(null);
+    setLookupError("");
+    setError("");
+    setMessage("");
+    setSelectedCustomerId(null);
+    setCurrentPoints(null);
+    setTransactions([]);
+    if (!trimmedDni || trimmedDni.length < 7) {
+      setLoadingLookup(false);
+      return;
+    }
+    lookupTimeoutRef.current = setTimeout(() => {
+      lookupCustomer(trimmedDni);
+    }, 300);
+    return () => {
+      if (lookupTimeoutRef.current) {
+        clearTimeout(lookupTimeoutRef.current);
+      }
+    };
+  }, [dni]);
+
   const handleSearch = async () => {
     if (!dni) {
       setError("DNI requerido");
@@ -47,17 +106,7 @@ export default function LoadPoints() {
     }
     setError("");
     setMessage("");
-    try {
-      const res = await api.get(`/api/customers/customers/${dni}`);
-      setSelectedCustomerId(res.data.id);
-      setCurrentPoints(res.data.puntos);
-      fetchTransactions(res.data.id);
-    } catch (e) {
-      setSelectedCustomerId(null);
-      setCurrentPoints(null);
-      setTransactions([]);
-      setError(e?.response?.data?.message || "Error al buscar cliente.");
-    }
+    await lookupCustomer(dni);
   };
 
   const handleSubmit = async () => {
@@ -127,6 +176,22 @@ export default function LoadPoints() {
             >
               Buscar
             </button>
+          </div>
+
+          <div className="text-sm text-gray-700 bg-blue-50 border border-blue-100 rounded p-2">
+            {loadingLookup && <div>Buscando cliente...</div>}
+            {!loadingLookup && customer?.nombre && (
+              <div>
+                Cliente: <span className="font-semibold">{customer.nombre}</span>
+              </div>
+            )}
+            {!loadingLookup && customer?.puntos !== undefined && (
+              <div>
+                Puntos actuales:{" "}
+                <span className="font-semibold">{customer.puntos}</span>
+              </div>
+            )}
+            {!loadingLookup && lookupError && <div>{lookupError}</div>}
           </div>
 
           <input
