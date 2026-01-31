@@ -90,6 +90,18 @@ export default function LoadPoints() {
     }
   };
 
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    handleSubmit();
+  };
+
+  const handleDniKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSearch();
+    }
+  };
+
   const formatType = (type) => (type === "REDEEM" ? "Canje" : "Carga");
   const formatPoints = (points) =>
     points > 0 ? `+${points}` : `${points}`;
@@ -99,65 +111,69 @@ export default function LoadPoints() {
       <div className="bg-white p-6 rounded-lg shadow w-80 space-y-3">
         <h1 className="text-lg font-semibold text-center">Cargar Puntos</h1>
 
-        <div className="flex gap-2">
+        <form onSubmit={handleFormSubmit} className="space-y-3">
+          <div className="flex gap-2">
+            <input
+              className="border w-full p-2 rounded"
+              placeholder="DNI"
+              value={dni}
+              onChange={(e) => setDni(e.target.value)}
+              onKeyDown={handleDniKeyDown}
+            />
+            <button
+              type="button"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-3 rounded"
+              onClick={handleSearch}
+            >
+              Buscar
+            </button>
+          </div>
+
           <input
             className="border w-full p-2 rounded"
-            placeholder="DNI"
-            value={dni}
-            onChange={(e) => setDni(e.target.value)}
+            type="number"
+            min="1"
+            step="1"
+            placeholder="Operaciones"
+            value={operaciones}
+            onChange={(e) => setOperaciones(e.target.value)}
           />
-          <button
-            className="bg-blue-500 hover:bg-blue-600 text-white px-3 rounded"
-            onClick={handleSearch}
-          >
-            Buscar
-          </button>
-        </div>
 
-        <input
-          className="border w-full p-2 rounded"
-          type="number"
-          min="1"
-          step="1"
-          placeholder="Operaciones"
-          value={operaciones}
-          onChange={(e) => setOperaciones(e.target.value)}
-        />
-
-        <div className="text-sm text-gray-700 bg-blue-50 border border-blue-100 rounded p-2">
-          Puntos a cargar:{" "}
-          <span className="font-semibold">{pointsCalculated}</span>{" "}
-          <span className="text-xs text-gray-500">
-            (50 puntos por operación)
-          </span>
-        </div>
-
-        {currentPoints !== null && (
           <div className="text-sm text-gray-700 bg-blue-50 border border-blue-100 rounded p-2">
-            Puntos actuales:{" "}
-            <span className="font-semibold">{currentPoints}</span>
+            Puntos a cargar:{" "}
+            <span className="font-semibold">{pointsCalculated}</span>{" "}
+            <span className="text-xs text-gray-500">
+              (50 puntos por operación)
+            </span>
           </div>
-        )}
 
-        {message && (
-          <div className="text-sm text-green-700 bg-green-50 border border-green-100 rounded p-2">
-            {message}
-          </div>
-        )}
+          {currentPoints !== null && (
+            <div className="text-sm text-gray-700 bg-blue-50 border border-blue-100 rounded p-2">
+              Puntos actuales:{" "}
+              <span className="font-semibold">{currentPoints}</span>
+            </div>
+          )}
 
-        {error && (
-          <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded p-2">
-            {error}
-          </div>
-        )}
+          {message && (
+            <div className="text-sm text-green-700 bg-green-50 border border-green-100 rounded p-2">
+              {message}
+            </div>
+          )}
 
-        <button
-          className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white w-full p-2 rounded"
-          onClick={handleSubmit}
-          disabled={!isCustomerLoaded || !isOperacionesValid}
-        >
-          Cargar
-        </button>
+          {error && (
+            <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded p-2">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white w-full p-2 rounded"
+            disabled={!isCustomerLoaded || !isOperacionesValid}
+          >
+            Cargar
+          </button>
+        </form>
 
         {isAdmin && (
           <div className="pt-2 border-t border-gray-200">

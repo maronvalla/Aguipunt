@@ -124,6 +124,18 @@ export default function RedeemPrize() {
     return submitCustom();
   };
 
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    submit();
+  };
+
+  const handleDniKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      fetchCustomer();
+    }
+  };
+
   const resetPrizeForm = () => {
     setNewPrizeName("");
     setNewPrizePoints("");
@@ -193,111 +205,119 @@ export default function RedeemPrize() {
   return (
     <div className="min-h-screen bg-blue-500 flex items-center justify-center">
       <div className="bg-white p-6 rounded-lg shadow w-80 space-y-3">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-center">Canjear</h1>
-          {isAdmin && (
+        <form onSubmit={handleFormSubmit} className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-semibold text-center">Canjear</h1>
+            {isAdmin && (
+              <button
+                type="button"
+                className="text-xs text-blue-700 hover:underline"
+                onClick={() => setShowAddPrize(true)}
+              >
+                Añadir premio
+              </button>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <input
+              className="border w-full p-2 rounded"
+              placeholder="DNI"
+              value={dni}
+              onChange={(e) => setDni(e.target.value)}
+              onKeyDown={handleDniKeyDown}
+            />
             <button
-              className="text-xs text-blue-700 hover:underline"
-              onClick={() => setShowAddPrize(true)}
+              type="button"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-3 rounded"
+              onClick={fetchCustomer}
             >
-              Añadir premio
+              Buscar
             </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <button
+              type="button"
+              className={`border rounded p-2 ${
+                mode === "prize" ? "bg-blue-500 text-white" : "bg-white"
+              }`}
+              onClick={() => setMode("prize")}
+            >
+              Premio
+            </button>
+            <button
+              type="button"
+              className={`border rounded p-2 ${
+                mode === "custom" ? "bg-blue-500 text-white" : "bg-white"
+              }`}
+              onClick={() => setMode("custom")}
+            >
+              Personalizado
+            </button>
+          </div>
+
+          {mode === "prize" && (
+            <select
+              className="border w-full p-2 rounded"
+              value={premioId}
+              onChange={(e) => setPremioId(e.target.value)}
+            >
+              {prizes.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.id} - {p.nombre} ({p.costo_puntos})
+                </option>
+              ))}
+              {prizes.length === 0 && <option value="">Sin premios</option>}
+            </select>
           )}
-        </div>
 
-        <div className="flex gap-2">
-          <input
-            className="border w-full p-2 rounded"
-            placeholder="DNI"
-            value={dni}
-            onChange={(e) => setDni(e.target.value)}
-          />
+          {mode === "custom" && (
+            <div className="space-y-2">
+              <input
+                className="border w-full p-2 rounded"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="Puntos a canjear"
+                value={customPoints}
+                onChange={(e) => setCustomPoints(e.target.value)}
+              />
+              <input
+                className="border w-full p-2 rounded"
+                placeholder="Nota (opcional)"
+                value={customNote}
+                onChange={(e) => setCustomNote(e.target.value)}
+              />
+            </div>
+          )}
+
+          {currentPoints !== null && (
+            <div className="text-sm text-gray-700 bg-blue-50 border border-blue-100 rounded p-2">
+              Puntos actuales:{" "}
+              <span className="font-semibold">{currentPoints}</span>
+            </div>
+          )}
+
+          {message && (
+            <div className="text-sm text-green-700 bg-green-50 border border-green-100 rounded p-2">
+              {message}
+            </div>
+          )}
+
+          {error && (
+            <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded p-2">
+              {error}
+            </div>
+          )}
+
           <button
-            className="bg-blue-500 hover:bg-blue-600 text-white px-3 rounded"
-            onClick={fetchCustomer}
+            type="submit"
+            className="bg-blue-500 hover:bg-blue-600 text-white w-full p-2 rounded"
           >
-            Buscar
+            Canjear
           </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <button
-            className={`border rounded p-2 ${
-              mode === "prize" ? "bg-blue-500 text-white" : "bg-white"
-            }`}
-            onClick={() => setMode("prize")}
-          >
-            Premio
-          </button>
-          <button
-            className={`border rounded p-2 ${
-              mode === "custom" ? "bg-blue-500 text-white" : "bg-white"
-            }`}
-            onClick={() => setMode("custom")}
-          >
-            Personalizado
-          </button>
-        </div>
-
-        {mode === "prize" && (
-          <select
-            className="border w-full p-2 rounded"
-            value={premioId}
-            onChange={(e) => setPremioId(e.target.value)}
-          >
-            {prizes.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.id} - {p.nombre} ({p.costo_puntos})
-              </option>
-            ))}
-            {prizes.length === 0 && <option value="">Sin premios</option>}
-          </select>
-        )}
-
-        {mode === "custom" && (
-          <div className="space-y-2">
-            <input
-              className="border w-full p-2 rounded"
-              type="number"
-              min="1"
-              step="1"
-              placeholder="Puntos a canjear"
-              value={customPoints}
-              onChange={(e) => setCustomPoints(e.target.value)}
-            />
-            <input
-              className="border w-full p-2 rounded"
-              placeholder="Nota (opcional)"
-              value={customNote}
-              onChange={(e) => setCustomNote(e.target.value)}
-            />
-          </div>
-        )}
-
-        {currentPoints !== null && (
-          <div className="text-sm text-gray-700 bg-blue-50 border border-blue-100 rounded p-2">
-            Puntos actuales: <span className="font-semibold">{currentPoints}</span>
-          </div>
-        )}
-
-        {message && (
-          <div className="text-sm text-green-700 bg-green-50 border border-green-100 rounded p-2">
-            {message}
-          </div>
-        )}
-
-        {error && (
-          <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded p-2">
-            {error}
-          </div>
-        )}
-
-        <button
-          className="bg-blue-500 hover:bg-blue-600 text-white w-full p-2 rounded"
-          onClick={submit}
-        >
-          Canjear
-        </button>
+        </form>
 
         {isAdmin && (
           <div className="pt-2 border-t border-gray-200">
@@ -353,83 +373,92 @@ export default function RedeemPrize() {
       {showAddPrize && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-4 w-full max-w-sm space-y-3">
-            <div className="text-sm font-semibold">
-              {editingPrizeId ? "Editar premio" : "Añadir premio"}
-            </div>
-            <input
-              className="border w-full p-2 rounded"
-              placeholder="Nombre"
-              value={newPrizeName}
-              onChange={(e) => setNewPrizeName(e.target.value)}
-            />
-            <input
-              className="border w-full p-2 rounded"
-              type="number"
-              min="1"
-              step="1"
-              placeholder="Puntos requeridos"
-              value={newPrizePoints}
-              onChange={(e) => setNewPrizePoints(e.target.value)}
-            />
-            {prizeError && (
-              <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded p-2">
-                {prizeError}
+            <form onSubmit={(e) => { e.preventDefault(); handleSavePrize(); }} className="space-y-3">
+              <div className="text-sm font-semibold">
+                {editingPrizeId ? "Editar premio" : "Añadir premio"}
               </div>
-            )}
-            <div className="flex justify-end gap-2">
-              <button className="px-3 py-1 rounded border" onClick={closeAddPrize}>
-                Cancelar
-              </button>
-              {editingPrizeId && (
+              <input
+                className="border w-full p-2 rounded"
+                placeholder="Nombre"
+                value={newPrizeName}
+                onChange={(e) => setNewPrizeName(e.target.value)}
+              />
+              <input
+                className="border w-full p-2 rounded"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="Puntos requeridos"
+                value={newPrizePoints}
+                onChange={(e) => setNewPrizePoints(e.target.value)}
+              />
+              {prizeError && (
+                <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded p-2">
+                  {prizeError}
+                </div>
+              )}
+              <div className="flex justify-end gap-2">
                 <button
+                  type="button"
                   className="px-3 py-1 rounded border"
-                  onClick={resetPrizeForm}
+                  onClick={closeAddPrize}
                 >
-                  Nuevo
+                  Cancelar
                 </button>
-              )}
-              <button
-                className="px-3 py-1 rounded bg-blue-500 text-white"
-                onClick={handleSavePrize}
-              >
-                Guardar
-              </button>
-            </div>
-
-            <div className="pt-2 border-t border-gray-200">
-              <div className="text-xs text-gray-600 mb-2">Premios existentes</div>
-              {prizes.length === 0 && (
-                <div className="text-xs text-gray-500">Sin premios.</div>
-              )}
-              <div className="space-y-2">
-                {prizes.map((p) => (
-                  <div
-                    key={p.id}
-                    className="text-xs text-gray-700 bg-gray-50 border border-gray-100 rounded p-2"
+                {editingPrizeId && (
+                  <button
+                    type="button"
+                    className="px-3 py-1 rounded border"
+                    onClick={resetPrizeForm}
                   >
-                    <div className="flex justify-between">
-                      <span>
-                        {p.nombre} ({p.costo_puntos})
-                      </span>
-                      <div className="space-x-2">
-                        <button
-                          className="text-blue-600 hover:underline"
-                          onClick={() => handleEditPrize(p)}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          className="text-rose-600 hover:underline"
-                          onClick={() => handleDeletePrize(p)}
-                        >
-                          Eliminar
-                        </button>
+                    Nuevo
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="px-3 py-1 rounded bg-blue-500 text-white"
+                >
+                  Guardar
+                </button>
+              </div>
+
+              <div className="pt-2 border-t border-gray-200">
+                <div className="text-xs text-gray-600 mb-2">Premios existentes</div>
+                {prizes.length === 0 && (
+                  <div className="text-xs text-gray-500">Sin premios.</div>
+                )}
+                <div className="space-y-2">
+                  {prizes.map((p) => (
+                    <div
+                      key={p.id}
+                      className="text-xs text-gray-700 bg-gray-50 border border-gray-100 rounded p-2"
+                    >
+                      <div className="flex justify-between">
+                        <span>
+                          {p.nombre} ({p.costo_puntos})
+                        </span>
+                        <div className="space-x-2">
+                          <button
+                            type="button"
+                            className="text-blue-600 hover:underline"
+                            onClick={() => handleEditPrize(p)}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            className="text-rose-600 hover:underline"
+                            onClick={() => handleDeletePrize(p)}
+                          >
+                            Eliminar
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}
