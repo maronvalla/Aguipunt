@@ -33,3 +33,6 @@ backend/dist/
 backend/data/
 *.db
 *.sqlite
+
+# allow sqlite db snapshot (manual)
+!backend/data/aguipuntos.db
