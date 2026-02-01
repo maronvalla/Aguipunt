@@ -32,7 +32,7 @@ export default function Reports() {
   const [preset, setPreset] = useState("day");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [userId, setUserId] = useState("");
+  const [userFilter, setUserFilter] = useState("");
   const [totals, setTotals] = useState(null);
   const [items, setItems] = useState([]);
   const [showVoidModal, setShowVoidModal] = useState(false);
@@ -54,7 +54,14 @@ export default function Reports() {
       const params = new URLSearchParams();
       if (from) params.set("from", from);
       if (to) params.set("to", to);
-      if (userId.trim()) params.set("userId", userId.trim());
+      const userFilterValue = userFilter.trim();
+      if (userFilterValue) {
+        if (/^\d+$/.test(userFilterValue)) {
+          params.set("userId", userFilterValue);
+        } else {
+          params.set("userName", userFilterValue);
+        }
+      }
       const res = await api.get(
         `/api/reports/points-loaded?${params.toString()}`
       );
@@ -79,7 +86,7 @@ export default function Reports() {
 
   useEffect(() => {
     fetchReport();
-  }, [from, to, userId]);
+  }, [from, to, userFilter]);
 
   const openVoidModal = (txId) => {
     setVoidTargetId(txId);
@@ -142,9 +149,9 @@ export default function Reports() {
           />
           <input
             className="border border-slate-200 p-1.5 rounded text-sm bg-slate-50"
-            placeholder="Usuario (ID)"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
+            placeholder="Usuario (ID o nombre)"
+            value={userFilter}
+            onChange={(e) => setUserFilter(e.target.value)}
           />
         </div>
 
