@@ -47,7 +47,6 @@ router.get(
       (sumErr, sumRow) => {
         if (sumErr) {
           console.error("Error al calcular totales:", sumErr);
-	console.error("reports points-loaded error:", err);
           const message = "Error al calcular totales";
           return res
             .status(500)
@@ -55,10 +54,6 @@ router.get(
               process.env.NODE_ENV === "production"
                 ? { message }
                 : { message, detail: sumErr.message }
-		return res.status(500).json({
-  		message: "Error al calcular totales",
-  		detail: err.message
-		});
             );
         }
 
