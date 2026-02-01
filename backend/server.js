@@ -8,6 +8,7 @@ const authRoutes = require("./routes/auth");
 const customersRoutes = require("./routes/customers");
 const pointsRoutes = require("./routes/points");
 const prizesRoutes = require("./routes/prizes");
+const reportsRoutes = require("./routes/reports");
 const usersRoutes = require("./routes/users");
 
 const requireAuth = require("./middleware/auth");
@@ -66,6 +67,7 @@ app.use("/api", requireAuth);
 app.use("/api/customers", customersRoutes);
 app.use("/api/points", pointsRoutes);
 app.use("/api/prizes", prizesRoutes);
+app.use("/api/reports", reportsRoutes);
 app.use("/api/users", usersRoutes);
 
 /* =======================

@@ -33,7 +33,7 @@ export default function Reports() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [userId, setUserId] = useState("");
-  const [totals, setTotals] = useState({ totalPointsLoaded: 0 });
+  const [totals, setTotals] = useState(null);
   const [items, setItems] = useState([]);
   const [showVoidModal, setShowVoidModal] = useState(false);
   const [voidReason, setVoidReason] = useState("");
@@ -56,19 +56,17 @@ export default function Reports() {
       if (to) params.set("to", to);
       if (userId.trim()) params.set("userId", userId.trim());
       const res = await api.get(
-        `/api/reports/reports/points-loaded?${params.toString()}`
+        `/api/reports/points-loaded?${params.toString()}`
       );
-      setTotals(
-        res.data.totals || {
-          totalPointsLoaded: 0,
-          totalVoided: 0,
-          totalNet: 0,
-        }
-      );
+      setTotals(res.data.totals || null);
       setItems(res.data.items || []);
     } catch (e) {
-      setError(e?.response?.data?.message || "Error al cargar reportes.");
-      setTotals({ totalPointsLoaded: 0 });
+      if (e?.response?.status === 404) {
+        setError("Endpoint de reportes no encontrado (404).");
+      } else {
+        setError(e?.response?.data?.message || "Error al cargar reportes.");
+      }
+      setTotals(null);
       setItems([]);
     } finally {
       setLoading(false);
@@ -156,19 +154,19 @@ export default function Reports() {
           <div>
             <div className="text-xs text-slate-500">Total cargado</div>
             <div className="text-lg font-bold text-slate-800">
-              {totals.totalPointsLoaded}
+              {totals ? totals.totalPointsLoaded : "-"}
             </div>
           </div>
           <div>
             <div className="text-xs text-slate-500">Total anulaciones</div>
             <div className="text-lg font-bold text-slate-800">
-              {totals.totalVoided}
+              {totals ? totals.totalVoided : "-"}
             </div>
           </div>
           <div>
             <div className="text-xs text-slate-500">Total neto</div>
             <div className="text-lg font-bold text-slate-800">
-              {totals.totalNet}
+              {totals ? totals.totalNet : "-"}
             </div>
           </div>
         </div>

@@ -3,6 +3,15 @@ const db = require("../db");
 const requireRole = require("../middleware/requireRole");
 const router = express.Router();
 
+const getArgentinaToday = () => {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+};
+
 const buildDateFilter = (from, to, addParam) => {
   const parts = [];
   if (from) {
@@ -15,11 +24,12 @@ const buildDateFilter = (from, to, addParam) => {
 };
 
 router.get(
-  "/reports/points-loaded",
+  "/points-loaded",
   requireRole("admin"),
   (req, res) => {
-    const from = String(req.query.from || "").trim();
-    const to = String(req.query.to || "").trim();
+    const today = getArgentinaToday();
+    const from = String(req.query.from || "").trim() || today;
+    const to = String(req.query.to || "").trim() || today;
     const userId = String(req.query.userId || "").trim();
 
     const params = [];
@@ -46,80 +56,48 @@ router.get(
             .json({ message: "Error al calcular totales." });
         }
 
-        const voidParams = [];
-        const addVoidParam = (value) => {
-          voidParams.push(value);
-          return `$${voidParams.length}`;
+        const itemParams = [];
+        const addItemParam = (value) => {
+          itemParams.push(value);
+          return `$${itemParams.length}`;
         };
-        const voidWhereParts = [
-          "t.type = 'ADJUST'",
-          "t.originaltransactionid IS NOT NULL",
-        ];
-        voidWhereParts.push(...buildDateFilter(from, to, addVoidParam));
+        const itemWhereParts = ["t.type = 'LOAD'", "t.voidedat IS NULL"];
+        itemWhereParts.push(...buildDateFilter(from, to, addItemParam));
         if (userId) {
-          voidWhereParts.push(`t.userid = ${addVoidParam(userId)}`);
+          itemWhereParts.push(`t.userid = ${addItemParam(userId)}`);
         }
-        const voidWhere = `WHERE ${voidWhereParts.join(" AND ")}`;
+        const itemWhere = `WHERE ${itemWhereParts.join(" AND ")}`;
 
-        db.get(
-          `SELECT COALESCE(SUM(t.points), 0) as totalVoided
+        db.all(
+          `SELECT t.id,
+                  t.createdat AS "createdAt",
+                  t.points,
+                  t.operations,
+                  t.userid AS "userId",
+                  t.username AS "userName",
+                  t.customerid AS "customerId",
+                  c.dni as customerDni,
+                  c.nombre as customerNombre
            FROM transactions t
-           ${voidWhere}`,
-          voidParams,
-          (voidErr, voidRow) => {
-            if (voidErr) {
+           JOIN customers c ON c.id = t.customerid
+           ${itemWhere}
+           ORDER BY t.createdat DESC`,
+          itemParams,
+          (err, rows) => {
+            if (err) {
               return res
                 .status(500)
-                .json({ message: "Error al calcular anulaciones." });
+                .json({ message: "Error al cargar reporte." });
             }
-
-            const itemParams = [];
-            const addItemParam = (value) => {
-              itemParams.push(value);
-              return `$${itemParams.length}`;
-            };
-            const itemWhereParts = ["t.type = 'LOAD'"];
-            itemWhereParts.push(...buildDateFilter(from, to, addItemParam));
-            if (userId) {
-              itemWhereParts.push(`t.userid = ${addItemParam(userId)}`);
-            }
-            const itemWhere = `WHERE ${itemWhereParts.join(" AND ")}`;
-
-            db.all(
-              `SELECT t.id,
-                      t.createdat AS "createdAt",
-                      t.points,
-                      t.operations,
-                      t.userid AS "userId",
-                      t.username AS "userName",
-                      t.voidedat AS "voidedAt",
-                      t.voidedbyuserid AS "voidedByUserId",
-                      t.voidreason AS "voidReason",
-                      c.dni as customerDni,
-                      c.nombre as customerNombre
-               FROM transactions t
-               JOIN customers c ON c.id = t.customerid
-               ${itemWhere}
-               ORDER BY t.createdat DESC`,
-              itemParams,
-              (err, rows) => {
-                if (err) {
-                  return res
-                    .status(500)
-                    .json({ message: "Error al cargar reporte." });
-                }
-                const totalPointsLoaded = sumRow?.totalPointsLoaded || 0;
-                const totalVoided = voidRow?.totalVoided || 0;
-                res.json({
-                  totals: {
-                    totalPointsLoaded,
-                    totalVoided,
-                    totalNet: totalPointsLoaded + totalVoided,
-                  },
-                  items: rows || [],
-                });
-              }
-            );
+            const totalPointsLoaded = sumRow?.totalPointsLoaded || 0;
+            res.json({
+              totals: {
+                totalPointsLoaded,
+                totalVoided: 0,
+                totalNet: totalPointsLoaded,
+              },
+              items: rows || [],
+            });
           }
         );
       }
