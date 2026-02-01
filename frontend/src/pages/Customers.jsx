@@ -14,6 +14,44 @@ export default function Customers() {
   const navigate = useNavigate();
   const activeRequest = useRef(null);
 
+  const buildExportUrl = (path) => {
+    const baseUrl = import.meta.env.VITE_API_URL || "";
+    const trimmedBase = baseUrl.replace(/\/+$/, "");
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    const query = params.toString();
+    return `${trimmedBase}${path}${query ? `?${query}` : ""}`;
+  };
+
+  const downloadFile = async (path, filename) => {
+    try {
+      const token = localStorage.getItem("token");
+      const url = buildExportUrl(path);
+      const response = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Error al descargar archivo.");
+      }
+      const blob = await response.blob();
+      const href = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = href;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(href);
+    } catch (e) {
+      setError(e?.message || "Error al descargar archivo.");
+    }
+  };
+
+  const downloadCsv = () => downloadFile("/api/customers/export.csv", "customers.csv");
+  const downloadXlsx = () =>
+    downloadFile("/api/customers/export.xlsx", "customers.xlsx");
+
   const fetchCustomers = async () => {
     if (activeRequest.current) {
       activeRequest.current.abort();
@@ -146,6 +184,23 @@ export default function Customers() {
             onClick={() => setOffset(offset + PAGE_SIZE)}
           >
             Siguiente
+          </button>
+        </div>
+
+        <div className="flex items-center justify-end gap-2">
+          <button
+            className="px-3 py-1 rounded border text-sm hover:bg-gray-50"
+            onClick={downloadCsv}
+            type="button"
+          >
+            Descargar CSV
+          </button>
+          <button
+            className="px-3 py-1 rounded border text-sm hover:bg-gray-50"
+            onClick={downloadXlsx}
+            type="button"
+          >
+            Descargar Excel
           </button>
         </div>
       </div>
