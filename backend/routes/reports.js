@@ -19,10 +19,16 @@ router.get(
     const today = getArgentinaToday();
     const from = String(req.query.from || "").trim() || today;
     const to = String(req.query.to || "").trim() || today;
-    const rawUserId = String(req.query.userId || req.query.user || "").trim();
-    const rawUserName = String(req.query.userName || "").trim();
-    const userId = rawUserId || "";
-    const userName = rawUserName || "";
+    const userIdRaw = String(req.query.userId || "").trim();
+    const userName = String(req.query.userName || req.query.user || "").trim();
+    const userId =
+      userIdRaw && /^\d+$/.test(userIdRaw) ? Number(userIdRaw) : null;
+
+    if (userIdRaw && userId === null && !userName) {
+      return res.status(400).json({
+        message: "El filtro de usuario debe ser un ID numérico o un nombre.",
+      });
+    }
 
     const params = [];
     const addParam = (value) => {
@@ -35,8 +41,11 @@ router.get(
       `date(t.createdat) >= date(${addParam(from)})`,
       `date(t.createdat) <= date(${addParam(to)})`,
     ];
-    if (userId) whereParts.push(`t.userid = ${addParam(String(userId))}`);
-    if (userName) whereParts.push(`t.username = ${addParam(String(userName))}`);
+    if (userId !== null) {
+      whereParts.push(`t.userid = ${addParam(userId)}`);
+    } else if (userName) {
+      whereParts.push(`t.username = ${addParam(userName)}`);
+    }
     const where = `WHERE ${whereParts.join(" AND ")}`;
 
     db.get(
@@ -68,8 +77,11 @@ router.get(
           `date(t.createdat) >= date(${addItemParam(from)})`,
           `date(t.createdat) <= date(${addItemParam(to)})`,
         ];
-        if (userId) itemWhereParts.push(`t.userid = ${addItemParam(String(userId))}`);
-        if (userName) itemWhereParts.push(`t.username = ${addItemParam(String(userName))}`);
+        if (userId !== null) {
+          itemWhereParts.push(`t.userid = ${addItemParam(userId)}`);
+        } else if (userName) {
+          itemWhereParts.push(`t.username = ${addItemParam(userName)}`);
+        }
         const itemWhere = `WHERE ${itemWhereParts.join(" AND ")}`;
 
         db.all(
