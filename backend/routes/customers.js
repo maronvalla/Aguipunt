@@ -1,6 +1,7 @@
 const express = require("express");
 const db = require("../db");
 const requireRole = require("../middleware/requireRole");
+const ExcelJS = require("exceljs");
 const router = express.Router();
 
 const clampLimit = (value, def, max) => {
@@ -266,6 +267,68 @@ router.get("/export.csv", requireRole("admin"), (req, res) => {
       res.send(csv);
     }
   );
+});
+
+router.get("/export.xlsx", requireRole("admin"), async (req, res) => {
+  const search = String(req.query.search || "").trim();
+  const where = search ? "WHERE nombre ILIKE $1 OR dni ILIKE $2" : "";
+  const like = `%${search}%`;
+  const params = search ? [like, like] : [];
+
+  try {
+    const result = await db.pool.query(
+      `SELECT dni, nombre, celular, puntos
+       FROM customers
+       ${where}
+       ORDER BY nombre ASC`,
+      params
+    );
+
+    const rows = result.rows || [];
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Customers");
+
+    sheet.columns = [
+      { header: "DNI", key: "dni", width: 14 },
+      { header: "Nombre", key: "nombre", width: 30 },
+      { header: "Celular", key: "celular", width: 18 },
+      { header: "Puntos", key: "puntos", width: 12 },
+    ];
+
+    sheet.addRows(
+      rows.map((row) => ({
+        dni: row.dni,
+        nombre: row.nombre,
+        celular: row.celular,
+        puntos: row.puntos,
+      }))
+    );
+
+    sheet.getRow(1).font = { bold: true };
+    sheet.columns.forEach((column) => {
+      let maxLength = String(column.header || "").length;
+      column.eachCell({ includeEmpty: true }, (cell) => {
+        const value = cell.value === null || cell.value === undefined ? "" : cell.value;
+        const length = String(value).length;
+        if (length > maxLength) maxLength = length;
+      });
+      column.width = Math.max(column.width || 10, Math.min(40, maxLength + 2));
+    });
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=\"customers.xlsx\""
+    );
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error("Error al exportar clientes:", err);
+    res.status(500).json({ message: "Error al exportar clientes." });
+  }
 });
 
 router.get("/customers/:dni", (req, res) => {
