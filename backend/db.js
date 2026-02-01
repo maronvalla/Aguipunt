@@ -44,6 +44,11 @@ const initSchema = async () => {
       originaltransactionid INT,
       createdat TIMESTAMP NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
   `);
 
   await pool.query(`
