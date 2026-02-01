@@ -21,7 +21,7 @@ Backend (Railway/Render):
   - `PORT`
   - `JWT_SECRET`
   - `CORS_ORIGIN` (lista separada por coma, ej: `https://tu-frontend.com`)
-  - `SQLITE_PATH` (ej: `/data/aguipuntos.db` con volumen persistente)
+  - `DATABASE_URL` (cadena de conexiÃ³n PostgreSQL de Railway)
 - Health check: `GET /api/health`
 
 Frontend (Vercel/Netlify):
