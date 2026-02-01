@@ -14,6 +14,39 @@ const usersRoutes = require("./routes/users");
 const requireAuth = require("./middleware/auth");
 
 const app = express();
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const TELEGRAM_MESSAGE =
+  process.env.TELEGRAM_MESSAGE || "Recordatorio automático";
+const TELEGRAM_INTERVAL_MS = 60 * 1000;
+
+const shouldStartTelegramBot = Boolean(
+  TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID
+);
+
+const sendTelegramMessage = async () => {
+  if (!shouldStartTelegramBot) return;
+  try {
+    const response = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: TELEGRAM_MESSAGE,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Telegram sendMessage failed:", errorText);
+    }
+  } catch (error) {
+    console.error("Telegram sendMessage error:", error);
+  }
+};
 
 /* =======================
    Middlewares base
@@ -99,4 +132,14 @@ app.use((err, _req, res, _next) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Backend listening on port ${PORT}`);
+
+  if (shouldStartTelegramBot) {
+    console.log("Telegram bot scheduler enabled.");
+    sendTelegramMessage();
+    setInterval(sendTelegramMessage, TELEGRAM_INTERVAL_MS);
+  } else {
+    console.log(
+      "Telegram bot scheduler disabled. Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID."
+    );
+  }
 });
