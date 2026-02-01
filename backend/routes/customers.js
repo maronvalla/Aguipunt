@@ -264,4 +264,69 @@ router.post("/customers", (req, res) => {
   );
 });
 
+router.post("/import", requireRole("admin"), async (req, res) => {
+  const items = Array.isArray(req.body?.items) ? req.body.items : null;
+  if (!items) {
+    return res.status(400).json({ message: "Items requeridos." });
+  }
+
+  let inserted = 0;
+  let updated = 0;
+  let errors = 0;
+
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    for (const item of items) {
+      const dni = String(item?.dni || "").trim();
+      const nombre = String(item?.nombre || "").trim();
+      const celularRaw =
+        item?.celular === null || item?.celular === undefined
+          ? null
+          : String(item.celular).trim();
+      const puntosValue = Number(item?.puntos);
+
+      if (!dni || !nombre || !Number.isFinite(puntosValue)) {
+        errors += 1;
+        continue;
+      }
+
+      const celular = celularRaw === "" ? null : celularRaw;
+      const puntos = Math.trunc(puntosValue);
+
+      try {
+        const result = await client.query(
+          `INSERT INTO customers (dni, nombre, celular, puntos)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (dni) DO UPDATE SET
+             nombre = EXCLUDED.nombre,
+             celular = EXCLUDED.celular,
+             puntos = EXCLUDED.puntos
+           RETURNING (xmax = 0) AS inserted`,
+          [dni, nombre, celular, puntos]
+        );
+        if (result.rows?.[0]?.inserted) {
+          inserted += 1;
+        } else {
+          updated += 1;
+        }
+      } catch (_err) {
+        errors += 1;
+      }
+    }
+
+    await client.query("COMMIT");
+    return res.json({ inserted, updated, errors });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Error al importar clientes:", err);
+    return res
+      .status(500)
+      .json({ message: "Error al importar clientes.", inserted, updated, errors });
+  } finally {
+    client.release();
+  }
+});
+
 module.exports = router;
