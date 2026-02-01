@@ -12,17 +12,6 @@ const getArgentinaToday = () => {
   }).format(new Date());
 };
 
-const buildDateFilter = (from, to, addParam) => {
-  const parts = [];
-  if (from) {
-    parts.push(`date(t.createdat) >= date(${addParam(from)})`);
-  }
-  if (to) {
-    parts.push(`date(t.createdat) <= date(${addParam(to)})`);
-  }
-  return parts;
-};
-
 router.get(
   "/points-loaded",
   requireRole("admin"),
@@ -30,18 +19,24 @@ router.get(
     const today = getArgentinaToday();
     const from = String(req.query.from || "").trim() || today;
     const to = String(req.query.to || "").trim() || today;
-    const userId = String(req.query.userId || "").trim();
+    const rawUserId = String(req.query.userId || req.query.user || "").trim();
+    const rawUserName = String(req.query.userName || "").trim();
+    const userId = rawUserId || "";
+    const userName = rawUserName || "";
 
     const params = [];
     const addParam = (value) => {
       params.push(value);
       return `$${params.length}`;
     };
-    const whereParts = ["t.type = 'LOAD'", "t.voidedat IS NULL"];
-    whereParts.push(...buildDateFilter(from, to, addParam));
-    if (userId) {
-      whereParts.push(`t.userid = ${addParam(userId)}`);
-    }
+    const whereParts = [
+      "t.type = 'LOAD'",
+      "t.voidedat IS NULL",
+      `date(t.createdat) >= date(${addParam(from)})`,
+      `date(t.createdat) <= date(${addParam(to)})`,
+    ];
+    if (userId) whereParts.push(`t.userid = ${addParam(String(userId))}`);
+    if (userName) whereParts.push(`t.username = ${addParam(String(userName))}`);
     const where = `WHERE ${whereParts.join(" AND ")}`;
 
     db.get(
@@ -51,9 +46,15 @@ router.get(
       params,
       (sumErr, sumRow) => {
         if (sumErr) {
+          console.error("Error al calcular totales:", sumErr);
+          const message = "Error al calcular totales";
           return res
             .status(500)
-            .json({ message: "Error al calcular totales." });
+            .json(
+              process.env.NODE_ENV === "production"
+                ? { message }
+                : { message, detail: sumErr.message }
+            );
         }
 
         const itemParams = [];
@@ -61,11 +62,14 @@ router.get(
           itemParams.push(value);
           return `$${itemParams.length}`;
         };
-        const itemWhereParts = ["t.type = 'LOAD'", "t.voidedat IS NULL"];
-        itemWhereParts.push(...buildDateFilter(from, to, addItemParam));
-        if (userId) {
-          itemWhereParts.push(`t.userid = ${addItemParam(userId)}`);
-        }
+        const itemWhereParts = [
+          "t.type = 'LOAD'",
+          "t.voidedat IS NULL",
+          `date(t.createdat) >= date(${addItemParam(from)})`,
+          `date(t.createdat) <= date(${addItemParam(to)})`,
+        ];
+        if (userId) itemWhereParts.push(`t.userid = ${addItemParam(String(userId))}`);
+        if (userName) itemWhereParts.push(`t.username = ${addItemParam(String(userName))}`);
         const itemWhere = `WHERE ${itemWhereParts.join(" AND ")}`;
 
         db.all(
@@ -85,9 +89,15 @@ router.get(
           itemParams,
           (err, rows) => {
             if (err) {
+              console.error("Error al cargar reporte:", err);
+              const message = "Error al cargar reporte.";
               return res
                 .status(500)
-                .json({ message: "Error al cargar reporte." });
+                .json(
+                  process.env.NODE_ENV === "production"
+                    ? { message }
+                    : { message, detail: err.message }
+                );
             }
             const totalPointsLoaded = sumRow?.totalPointsLoaded || 0;
             res.json({

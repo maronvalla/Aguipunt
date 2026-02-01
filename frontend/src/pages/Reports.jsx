@@ -64,7 +64,11 @@ export default function Reports() {
       if (e?.response?.status === 404) {
         setError("Endpoint de reportes no encontrado (404).");
       } else {
-        setError(e?.response?.data?.message || "Error al cargar reportes.");
+        const message =
+          e?.response?.data?.detail ||
+          e?.response?.data?.message ||
+          "Error al cargar reportes.";
+        setError(message);
       }
       setTotals(null);
       setItems([]);
