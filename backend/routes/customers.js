@@ -218,6 +218,56 @@ router.get(
   }
 );
 
+router.get("/export.csv", requireRole("admin"), (req, res) => {
+  const search = String(req.query.search || "").trim();
+  const where = search ? "WHERE nombre ILIKE $1 OR dni ILIKE $2" : "";
+  const like = `%${search}%`;
+  const params = search ? [like, like] : [];
+
+  db.all(
+    `SELECT dni, nombre, celular, puntos
+     FROM customers
+     ${where}
+     ORDER BY nombre ASC`,
+    params,
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ message: "Error al exportar clientes." });
+      }
+
+      const escapeCsv = (value) => {
+        if (value === null || value === undefined) return "";
+        const str = String(value);
+        if (str.includes(",") || str.includes("\"") || str.includes("\n")) {
+          return `"${str.replace(/"/g, "\"\"")}"`;
+        }
+        return str;
+      };
+
+      const header = ["dni", "nombre", "celular", "puntos"];
+      const lines = [header.join(",")];
+      (rows || []).forEach((row) => {
+        lines.push(
+          [
+            escapeCsv(row.dni),
+            escapeCsv(row.nombre),
+            escapeCsv(row.celular),
+            escapeCsv(row.puntos),
+          ].join(",")
+        );
+      });
+      const csv = lines.join("\n");
+
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=\"customers.csv\""
+      );
+      res.send(csv);
+    }
+  );
+});
+
 router.get("/customers/:dni", (req, res) => {
   const { dni } = req.params;
   if (!dni) {
