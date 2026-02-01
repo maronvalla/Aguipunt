@@ -3,15 +3,13 @@ const db = require("../db");
 const requireRole = require("../middleware/requireRole");
 const router = express.Router();
 
-const buildDateFilter = (from, to, params) => {
+const buildDateFilter = (from, to, addParam) => {
   const parts = [];
   if (from) {
-    parts.push("date(t.createdAt) >= date(?)");
-    params.push(from);
+    parts.push(`date(t.createdat) >= date(${addParam(from)})`);
   }
   if (to) {
-    parts.push("date(t.createdAt) <= date(?)");
-    params.push(to);
+    parts.push(`date(t.createdat) <= date(${addParam(to)})`);
   }
   return parts;
 };
@@ -25,11 +23,14 @@ router.get(
     const userId = String(req.query.userId || "").trim();
 
     const params = [];
-    const whereParts = ["t.type = 'LOAD'", "t.voidedAt IS NULL"];
-    whereParts.push(...buildDateFilter(from, to, params));
+    const addParam = (value) => {
+      params.push(value);
+      return `$${params.length}`;
+    };
+    const whereParts = ["t.type = 'LOAD'", "t.voidedat IS NULL"];
+    whereParts.push(...buildDateFilter(from, to, addParam));
     if (userId) {
-      whereParts.push("t.userId = ?");
-      params.push(userId);
+      whereParts.push(`t.userid = ${addParam(userId)}`);
     }
     const where = `WHERE ${whereParts.join(" AND ")}`;
 
@@ -46,14 +47,17 @@ router.get(
         }
 
         const voidParams = [];
+        const addVoidParam = (value) => {
+          voidParams.push(value);
+          return `$${voidParams.length}`;
+        };
         const voidWhereParts = [
           "t.type = 'ADJUST'",
-          "t.originalTransactionId IS NOT NULL",
+          "t.originaltransactionid IS NOT NULL",
         ];
-        voidWhereParts.push(...buildDateFilter(from, to, voidParams));
+        voidWhereParts.push(...buildDateFilter(from, to, addVoidParam));
         if (userId) {
-          voidWhereParts.push("t.userId = ?");
-          voidParams.push(userId);
+          voidWhereParts.push(`t.userid = ${addVoidParam(userId)}`);
         }
         const voidWhere = `WHERE ${voidWhereParts.join(" AND ")}`;
 
@@ -70,22 +74,33 @@ router.get(
             }
 
             const itemParams = [];
+            const addItemParam = (value) => {
+              itemParams.push(value);
+              return `$${itemParams.length}`;
+            };
             const itemWhereParts = ["t.type = 'LOAD'"];
-            itemWhereParts.push(...buildDateFilter(from, to, itemParams));
+            itemWhereParts.push(...buildDateFilter(from, to, addItemParam));
             if (userId) {
-              itemWhereParts.push("t.userId = ?");
-              itemParams.push(userId);
+              itemWhereParts.push(`t.userid = ${addItemParam(userId)}`);
             }
             const itemWhere = `WHERE ${itemWhereParts.join(" AND ")}`;
 
             db.all(
-              `SELECT t.id, t.createdAt, t.points, t.operations, t.userId, t.userName,
-                      t.voidedAt, t.voidedByUserId, t.voidReason,
-                      c.dni as customerDni, c.nombre as customerNombre
+              `SELECT t.id,
+                      t.createdat AS "createdAt",
+                      t.points,
+                      t.operations,
+                      t.userid AS "userId",
+                      t.username AS "userName",
+                      t.voidedat AS "voidedAt",
+                      t.voidedbyuserid AS "voidedByUserId",
+                      t.voidreason AS "voidReason",
+                      c.dni as customerDni,
+                      c.nombre as customerNombre
                FROM transactions t
-               JOIN customers c ON c.id = t.customerId
+               JOIN customers c ON c.id = t.customerid
                ${itemWhere}
-               ORDER BY t.createdAt DESC`,
+               ORDER BY t.createdat DESC`,
               itemParams,
               (err, rows) => {
                 if (err) {

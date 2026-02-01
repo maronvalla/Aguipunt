@@ -1,133 +1,128 @@
 // backend/db.js
-const fs = require("fs");
-const path = require("path");
-const Database = require("better-sqlite3");
+const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 
-const DB_PATH =
-  process.env.DB_PATH || path.join(__dirname, "data", "aguipuntos.db");
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-// Asegurar que exista el directorio donde vive la DB (ej: /data en Railway)
-fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-
-// Abrir DB
-console.log("[db] using:", DB_PATH);
-const db = new Database(DB_PATH);
-
-// Ensure required tables exist
-try {
-  db.exec(`
+const initSchema = async () => {
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       username TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'admin'
     );
 
     CREATE TABLE IF NOT EXISTS customers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       dni TEXT UNIQUE NOT NULL,
       nombre TEXT NOT NULL,
       celular TEXT,
-      puntos INTEGER NOT NULL DEFAULT 0
+      puntos INT NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS prizes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       nombre TEXT NOT NULL,
-      costo_puntos INTEGER NOT NULL
+      costo_puntos INT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS transactions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      customerId INTEGER NOT NULL,
+      id SERIAL PRIMARY KEY,
+      customerid INT NOT NULL,
       type TEXT NOT NULL,
-      operations INTEGER,
-      points INTEGER NOT NULL,
+      operations INT,
+      points INT NOT NULL,
       note TEXT,
-      userId INTEGER,
-      userName TEXT,
-      voidedAt TEXT,
-      voidedByUserId INTEGER,
-      voidReason TEXT,
-      originalTransactionId INTEGER,
-      createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+      userid INT,
+      username TEXT,
+      voidedat TIMESTAMP,
+      voidedbyuserid INT,
+      voidreason TEXT,
+      originaltransactionid INT,
+      createdat TIMESTAMP NOT NULL DEFAULT NOW()
     );
   `);
-} catch (err) {
-  console.error("[db] schema init failed:", err);
-}
 
-// Performance indexes
-try {
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_customers_dni ON customers(dni);
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_unique ON users(username);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_dni_unique ON customers(dni);
     CREATE INDEX IF NOT EXISTS idx_customers_nombre ON customers(nombre);
-    CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-    CREATE INDEX IF NOT EXISTS idx_transactions_customerId ON transactions(customerId);
+    CREATE INDEX IF NOT EXISTS idx_transactions_customerid ON transactions(customerid);
     CREATE INDEX IF NOT EXISTS idx_prizes_id ON prizes(id);
   `);
-} catch (err) {
-  console.error("[db] index init failed:", err);
-}
 
-// Seed default admin only if table is empty
-try {
-  const row = db.prepare("SELECT COUNT(1) AS count FROM users").get();
-  if (row && row.count === 0) {
+  const countRes = await pool.query("SELECT COUNT(1) AS count FROM users");
+  const count = Number(countRes.rows?.[0]?.count || 0);
+  if (count === 0) {
     const hashed = bcrypt.hashSync("admin", 10);
-    db.prepare(
-      "INSERT INTO users (username, password, role) VALUES (?, ?, 'admin')"
-    ).run("admin", hashed);
+    await pool.query(
+      "INSERT INTO users (username, password_hash, role) VALUES ($1, $2, 'admin')",
+      ["admin", hashed]
+    );
   }
-} catch (err) {
-  // Keep startup resilient; auth will surface DB issues if any
-  console.error("DB seed error:", err);
-}
+};
 
-// Helpers compatibles con el estilo sqlite3 (callbacks)
-function run(sql, params = [], cb) {
-  try {
-    const info = db.prepare(sql).run(params);
-    if (typeof cb === "function") cb(null, info);
-    return info;
-  } catch (err) {
-    if (typeof cb === "function") cb(err);
-    throw err;
+initSchema().catch((err) => {
+  console.error("[db] schema init failed:", err);
+});
+
+const normalizeArgs = (sql, params, cb) => {
+  if (typeof params === "function") {
+    return { sql, params: [], cb: params };
   }
+  return { sql, params: params || [], cb };
+};
+
+function run(sql, params = [], cb) {
+  const args = normalizeArgs(sql, params, cb);
+  const promise = pool.query(args.sql, args.params);
+  promise
+    .then((result) => {
+      const ctx = {
+        lastID: result.rows?.[0]?.id ?? null,
+        changes: result.rowCount ?? 0,
+      };
+      if (typeof args.cb === "function") args.cb.call(ctx, null, result);
+    })
+    .catch((err) => {
+      const ctx = { lastID: null, changes: 0 };
+      if (typeof args.cb === "function") args.cb.call(ctx, err);
+    });
+  return promise;
 }
 
 function get(sql, params = [], cb) {
-  try {
-    const row = db.prepare(sql).get(params);
-    if (typeof cb === "function") cb(null, row);
-    return row;
-  } catch (err) {
-    if (typeof cb === "function") cb(err);
-    throw err;
-  }
+  const args = normalizeArgs(sql, params, cb);
+  const promise = pool.query(args.sql, args.params);
+  promise
+    .then((result) => {
+      const row = result.rows?.[0] || null;
+      if (typeof args.cb === "function") args.cb(null, row);
+    })
+    .catch((err) => {
+      if (typeof args.cb === "function") args.cb(err);
+    });
+  return promise;
 }
 
 function all(sql, params = [], cb) {
-  try {
-    const rows = db.prepare(sql).all(params);
-    if (typeof cb === "function") cb(null, rows);
-    return rows;
-  } catch (err) {
-    if (typeof cb === "function") cb(err);
-    throw err;
-  }
+  const args = normalizeArgs(sql, params, cb);
+  const promise = pool.query(args.sql, args.params);
+  promise
+    .then((result) => {
+      const rows = result.rows || [];
+      if (typeof args.cb === "function") args.cb(null, rows);
+    })
+    .catch((err) => {
+      if (typeof args.cb === "function") args.cb(err);
+    });
+  return promise;
 }
 
-// Compat: algunos códigos llamaban db.serialize(fn)
-function serialize(fn) {
-  if (typeof fn === "function") fn();
-}
+const db = { get, all, run };
+db.pool = pool;
 
-module.exports = {
-  db,
-  run,
-  get,
-  all,
-  serialize,
-};
+module.exports = db;

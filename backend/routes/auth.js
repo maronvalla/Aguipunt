@@ -23,7 +23,10 @@ router.post("/login", (req, res) => {
         .json({ message: "Usuario y contraseña requeridos." });
     }
 
-    db.get("SELECT * FROM users WHERE username = ?", [username], (err, user) => {
+    db.get(
+      "SELECT id, username, password_hash, role FROM users WHERE username = $1",
+      [username],
+      (err, user) => {
       if (err) {
         console.error("Login DB error:", err);
         if (timingEnabled) console.timeEnd("login");
@@ -35,9 +38,9 @@ router.post("/login", (req, res) => {
         return res.status(401).json({ message: "Credenciales inválidas." });
       }
 
-      const passwordOk = isBcryptHash(user.password)
-        ? bcrypt.compareSync(password, user.password)
-        : user.password === password;
+      const passwordOk = isBcryptHash(user.password_hash)
+        ? bcrypt.compareSync(password, user.password_hash)
+        : user.password_hash === password;
 
       if (!passwordOk) {
         if (timingEnabled) console.timeEnd("login");
@@ -59,7 +62,8 @@ router.post("/login", (req, res) => {
         role,
       });
       if (timingEnabled) console.timeEnd("login");
-    });
+      }
+    );
   } catch (err) {
     console.error("Login error:", err);
     if (timingEnabled) console.timeEnd("login");
@@ -81,43 +85,39 @@ router.post("/bootstrap-admin", (req, res) => {
     return res.status(400).json({ message: "Password requerido." });
   }
 
-  try {
-    const cols = db
-      .prepare("PRAGMA table_info(users)")
-      .all()
-      .map((r) => r.name);
-    if (!cols.includes("role")) {
-      db.run("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'admin'");
-    }
-  } catch (err) {
-    return res.status(500).json({ message: "Error al preparar usuario." });
-  }
-
   const hashed = bcrypt.hashSync(password, 10);
-  const existing = db.get("SELECT id FROM users WHERE username = ?", [username]);
-  if (existing?.id) {
-    db.run(
-      "UPDATE users SET password = ?, role = 'admin' WHERE id = ?",
-      [hashed, existing.id],
-      (err) => {
-        if (err) {
-          return res.status(500).json({ message: "Error al actualizar." });
-        }
-        return res.json({ ok: true, username });
+  db.get(
+    "SELECT id FROM users WHERE username = $1",
+    [username],
+    (err, existing) => {
+      if (err) {
+        return res.status(500).json({ message: "Error al validar usuario." });
       }
-    );
-  } else {
-    db.run(
-      "INSERT INTO users (username, password, role) VALUES (?, ?, 'admin')",
-      [username, hashed],
-      (err) => {
-        if (err) {
-          return res.status(500).json({ message: "Error al crear." });
-        }
-        return res.json({ ok: true, username });
+      if (existing?.id) {
+        db.run(
+          "UPDATE users SET password_hash = $1, role = 'admin' WHERE id = $2",
+          [hashed, existing.id],
+          (updateErr) => {
+            if (updateErr) {
+              return res.status(500).json({ message: "Error al actualizar." });
+            }
+            return res.json({ ok: true, username });
+          }
+        );
+      } else {
+        db.run(
+          "INSERT INTO users (username, password_hash, role) VALUES ($1, $2, 'admin')",
+          [username, hashed],
+          (insertErr) => {
+            if (insertErr) {
+              return res.status(500).json({ message: "Error al crear." });
+            }
+            return res.json({ ok: true, username });
+          }
+        );
       }
-    );
-  }
+    }
+  );
 });
 
 module.exports = router;

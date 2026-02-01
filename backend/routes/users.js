@@ -35,7 +35,7 @@ router.post("/users", requireRole("admin"), (req, res) => {
       .json({ message: "Contraseña inválida (mínimo 4)." });
   }
 
-  db.get("SELECT id FROM users WHERE username = ?", [username], (err, existing) => {
+  db.get("SELECT id FROM users WHERE username = $1", [username], (err, existing) => {
     if (err) {
       return res.status(500).json({ message: "Error al validar usuario." });
     }
@@ -45,7 +45,7 @@ router.post("/users", requireRole("admin"), (req, res) => {
 
     const hashed = bcrypt.hashSync(password, 10);
     db.run(
-      "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+      "INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING id",
       [username, hashed, role],
       function () {
         res.status(201).json({ id: this.lastID, username, role });
@@ -69,7 +69,7 @@ router.patch("/users/:id/password", requireRole("admin"), (req, res) => {
 
   const hashed = bcrypt.hashSync(password, 10);
   db.run(
-    "UPDATE users SET password = ? WHERE id = ?",
+    "UPDATE users SET password_hash = $1 WHERE id = $2",
     [hashed, id],
     function () {
       if (this.changes === 0) {
@@ -86,7 +86,7 @@ router.delete("/users/:id", requireRole("admin"), (req, res) => {
     return res.status(400).json({ message: "ID inválido." });
   }
 
-  db.run("DELETE FROM users WHERE id = ?", [id], function () {
+  db.run("DELETE FROM users WHERE id = $1", [id], function () {
     if (this.changes === 0) {
       return res.status(404).json({ message: "Usuario no encontrado." });
     }

@@ -11,29 +11,29 @@ router.post(
     const reason = String(req.body?.reason || "").trim();
 
     if (!Number.isFinite(id) || id <= 0) {
-      return res.status(400).json({ message: "Transacción inválida." });
+      return res.status(400).json({ message: "TransacciÃ³n invÃ¡lida." });
     }
 
     db.get(
-      "SELECT * FROM transactions WHERE id = ?",
+      "SELECT * FROM transactions WHERE id = $1",
       [id],
       (err, tx) => {
         if (err) {
-          return res.status(500).json({ message: "Error al buscar transacción." });
+          return res.status(500).json({ message: "Error al buscar transacciÃ³n." });
         }
         if (!tx) {
-          return res.status(404).json({ message: "Transacción no encontrada." });
+          return res.status(404).json({ message: "TransacciÃ³n no encontrada." });
         }
         if (tx.type !== "LOAD") {
           return res.status(400).json({ message: "Solo se puede anular cargas." });
         }
-        if (tx.voidedAt) {
-          return res.status(400).json({ message: "La carga ya está anulada." });
+        if (tx.voidedat) {
+          return res.status(400).json({ message: "La carga ya estÃ¡ anulada." });
         }
 
         db.get(
-          "SELECT * FROM customers WHERE id = ?",
-          [tx.customerId],
+          "SELECT * FROM customers WHERE id = $1",
+          [tx.customerid],
           (custErr, customer) => {
             if (custErr || !customer) {
               return res.status(500).json({ message: "Error al buscar cliente." });
@@ -43,26 +43,26 @@ router.post(
             const newPoints = customer.puntos + deltaPoints;
             const voidedByUserId = req.user?.id ?? null;
             const voidedByUserName = req.user?.username ?? null;
-            const note = `Anulación de carga #${tx.id}${reason ? `: ${reason}` : ""}`;
+            const note = `AnulaciÃ³n de carga #${tx.id}${reason ? `: ${reason}` : ""}`;
 
             db.run(
-              "UPDATE customers SET puntos = ? WHERE id = ?",
+              "UPDATE customers SET puntos = $1 WHERE id = $2",
               [newPoints, customer.id],
               () => {
                 db.run(
                   `UPDATE transactions
-                   SET voidedAt = datetime('now'),
-                       voidedByUserId = ?,
-                       voidReason = ?
-                   WHERE id = ?`,
+                   SET voidedat = NOW(),
+                       voidedbyuserid = $1,
+                       voidreason = $2
+                   WHERE id = $3`,
                   [voidedByUserId, reason || null, id],
                   () => {
                     db.run(
                       `INSERT INTO transactions
-                        (customerId, type, operations, points, note, userId, userName, originalTransactionId)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                        (customerid, type, operations, points, note, userid, username, originaltransactionid)
+                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
                       [
-                        tx.customerId,
+                        tx.customerid,
                         "ADJUST",
                         null,
                         deltaPoints,
@@ -76,7 +76,7 @@ router.post(
                           ok: true,
                           originalId: tx.id,
                           adjustTransactionId: this.lastID,
-                          customerId: tx.customerId,
+                          customerId: tx.customerid,
                           deltaPoints,
                           newPoints,
                         });

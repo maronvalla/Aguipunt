@@ -17,7 +17,7 @@ router.post("/points/load", (req, res) => {
   }
 
   db.get(
-    "SELECT * FROM customers WHERE dni = ?",
+    "SELECT * FROM customers WHERE dni = $1",
     [dni],
     (err, customer) => {
       if (err) {
@@ -33,7 +33,7 @@ const userId = req.user?.id ?? null;
 const userName = req.user?.username ?? null;
 
       db.run(
-        "UPDATE customers SET puntos = ? WHERE dni = ?",
+        "UPDATE customers SET puntos = $1 WHERE dni = $2",
         [newPoints, dni],
         () => {
           let opsValue = null;
@@ -45,7 +45,7 @@ const userName = req.user?.username ?? null;
           }
 
           db.run(
-            "INSERT INTO transactions (customerId, type, operations, points, note, userId, userName) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO transactions (customerid, type, operations, points, note, userid, username) VALUES ($1, $2, $3, $4, $5, $6, $7)",
             [customer.id, "LOAD", opsValue, puntos, null, userId, userName],
             () => {
               res.json({
@@ -77,7 +77,7 @@ router.post("/points/redeem-custom", (req, res) => {
   }
 
   db.get(
-    "SELECT * FROM customers WHERE dni = ?",
+    "SELECT * FROM customers WHERE dni = $1",
     [dni],
     (err, customer) => {
       if (err) {
@@ -102,11 +102,11 @@ const userName = req.user?.username ?? null;
       const noteValue = String(note || "").trim() || "Canje personalizado";
 
       db.run(
-        "UPDATE customers SET puntos = ? WHERE dni = ?",
+        "UPDATE customers SET puntos = $1 WHERE dni = $2",
         [newPoints, dni],
         () => {
           db.run(
-            "INSERT INTO transactions (customerId, type, operations, points, note, userId, userName) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO transactions (customerid, type, operations, points, note, userid, username) VALUES ($1, $2, $3, $4, $5, $6, $7)",
             [customer.id, "REDEEM", null, -puntos, noteValue, userId, userName],
             () => {
               res.json({

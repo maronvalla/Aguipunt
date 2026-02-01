@@ -15,9 +15,7 @@ router.get("/customers", requireRole("admin"), (req, res) => {
   const offsetRaw = Number(req.query.offset);
   const offset = Number.isFinite(offsetRaw) && offsetRaw >= 0 ? offsetRaw : 0;
 
-  const where = search
-    ? "WHERE nombre LIKE ? COLLATE NOCASE OR dni LIKE ? COLLATE NOCASE"
-    : "";
+  const where = search ? "WHERE nombre ILIKE $1 OR dni ILIKE $2" : "";
   const like = `%${search}%`;
   const params = search ? [like, like, limit, offset] : [limit, offset];
 
@@ -26,7 +24,7 @@ router.get("/customers", requireRole("admin"), (req, res) => {
      FROM customers
      ${where}
      ORDER BY nombre ASC
-     LIMIT ? OFFSET ?`,
+     LIMIT ${search ? "$3" : "$1"} OFFSET ${search ? "$4" : "$2"}`,
     params,
     (err, rows) => {
       if (err) {
@@ -55,7 +53,7 @@ router.get("/customers/by-id/:id", requireRole("admin"), (req, res) => {
     return res.status(400).json({ message: "Cliente inválido." });
   }
 
-  db.get("SELECT * FROM customers WHERE id = ?", [id], (err, row) => {
+  db.get("SELECT * FROM customers WHERE id = $1", [id], (err, row) => {
     if (err) {
       return res.status(500).json({ message: "Error al buscar cliente." });
     }
@@ -86,34 +84,46 @@ router.get("/customers/:id/transactions", requireRole("admin"), (req, res) => {
   const from = String(req.query.from || "").trim();
   const to = String(req.query.to || "").trim();
 
-  const whereParts = ["customerId = ?"];
-  const params = [customerId];
+  const params = [];
+  const whereParts = [];
+  const addParam = (value) => {
+    params.push(value);
+    return `$${params.length}`;
+  };
 
+  whereParts.push(`customerid = ${addParam(customerId)}`);
   if (type === "LOAD" || type === "REDEEM") {
-    whereParts.push("type = ?");
-    params.push(type);
+    whereParts.push(`type = ${addParam(type)}`);
   }
-
   if (from) {
-    whereParts.push("date(createdAt) >= date(?)");
-    params.push(from);
+    whereParts.push(`date(createdat) >= date(${addParam(from)})`);
   }
   if (to) {
-    whereParts.push("date(createdAt) <= date(?)");
-    params.push(to);
+    whereParts.push(`date(createdat) <= date(${addParam(to)})`);
   }
 
   const where = `WHERE ${whereParts.join(" AND ")}`;
   const sql = `
-    SELECT id, customerId, type, operations, points, note, userId, userName,
-           voidedAt, voidedByUserId, voidReason, originalTransactionId, createdAt
+    SELECT id,
+           customerid AS "customerId",
+           type,
+           operations,
+           points,
+           note,
+           userid AS "userId",
+           username AS "userName",
+           voidedat AS "voidedAt",
+           voidedbyuserid AS "voidedByUserId",
+           voidreason AS "voidReason",
+           originaltransactionid AS "originalTransactionId",
+           createdat AS "createdAt"
     FROM transactions
     ${where}
     ORDER BY createdAt ${order}
-    LIMIT ? OFFSET ?
+    LIMIT ${addParam(limit + 1)} OFFSET ${addParam(offset)}
   `;
 
-  db.all(sql, [...params, limit + 1, offset], (err, rows) => {
+  db.all(sql, params, (err, rows) => {
     if (err) {
       return res.status(500).json({ message: "Error al buscar movimientos." });
     }
@@ -137,25 +147,32 @@ router.get(
   const from = String(req.query.from || "").trim();
   const to = String(req.query.to || "").trim();
 
-  const whereParts = ["customerId = ?"];
-  const params = [customerId];
+  const params = [];
+  const whereParts = [];
+  const addParam = (value) => {
+    params.push(value);
+    return `$${params.length}`;
+  };
 
+  whereParts.push(`customerid = ${addParam(customerId)}`);
   if (type === "LOAD" || type === "REDEEM") {
-    whereParts.push("type = ?");
-    params.push(type);
+    whereParts.push(`type = ${addParam(type)}`);
   }
   if (from) {
-    whereParts.push("date(createdAt) >= date(?)");
-    params.push(from);
+    whereParts.push(`date(createdat) >= date(${addParam(from)})`);
   }
   if (to) {
-    whereParts.push("date(createdAt) <= date(?)");
-    params.push(to);
+    whereParts.push(`date(createdat) <= date(${addParam(to)})`);
   }
 
   const where = `WHERE ${whereParts.join(" AND ")}`;
   const sql = `
-    SELECT createdAt, type, operations, points, note, userName
+    SELECT createdat AS "createdAt",
+           type,
+           operations,
+           points,
+           note,
+           username AS "userName"
     FROM transactions
     ${where}
     ORDER BY createdAt ${order}
@@ -207,7 +224,7 @@ router.get("/customers/:dni", (req, res) => {
     return res.status(400).json({ message: "DNI requerido." });
   }
 
-  db.get("SELECT * FROM customers WHERE dni = ?", [dni], (err, row) => {
+  db.get("SELECT * FROM customers WHERE dni = $1", [dni], (err, row) => {
     if (err) {
       return res.status(500).json({ message: "Error al buscar cliente." });
     }
@@ -229,7 +246,7 @@ router.post("/customers", (req, res) => {
   const { numeroDNI, nombreYApellido, numeroCelular } = req.body;
 
   db.get(
-    "SELECT * FROM customers WHERE dni = ?",
+    "SELECT * FROM customers WHERE dni = $1",
     [numeroDNI],
     (err, row) => {
       if (row) {
@@ -237,7 +254,7 @@ router.post("/customers", (req, res) => {
       }
 
       db.run(
-        "INSERT INTO customers (dni, nombre, celular) VALUES (?, ?, ?)",
+        "INSERT INTO customers (dni, nombre, celular) VALUES ($1, $2, $3)",
         [numeroDNI, nombreYApellido, numeroCelular],
         () => {
           res.json({ message: "Cliente añadido correctamente." });

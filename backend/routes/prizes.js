@@ -26,7 +26,7 @@ router.post("/prizes", requireRole("admin"), (req, res) => {
   }
 
   db.run(
-    "INSERT INTO prizes (nombre, costo_puntos) VALUES (?, ?)",
+    "INSERT INTO prizes (nombre, costo_puntos) VALUES ($1, $2) RETURNING id",
     [nombre, costo],
     function () {
       res.json({ id: this.lastID, nombre, costo_puntos: costo });
@@ -50,7 +50,7 @@ router.put("/prizes/:id", requireRole("admin"), (req, res) => {
   }
 
   db.run(
-    "UPDATE prizes SET nombre = ?, costo_puntos = ? WHERE id = ?",
+    "UPDATE prizes SET nombre = $1, costo_puntos = $2 WHERE id = $3",
     [nombre, costo, id],
     function () {
       if (this.changes === 0) {
@@ -67,7 +67,7 @@ router.delete("/prizes/:id", requireRole("admin"), (req, res) => {
     return res.status(400).json({ message: "ID inválido." });
   }
 
-  db.run("DELETE FROM prizes WHERE id = ?", [id], function () {
+  db.run("DELETE FROM prizes WHERE id = $1", [id], function () {
     if (this.changes === 0) {
       return res.status(404).json({ message: "Premio no encontrado." });
     }
@@ -89,7 +89,7 @@ const redeemHandler = (req, res) => {
       .json({ message: "Premio inválido. Debe ser mayor a 0." });
   }
 
-  db.get("SELECT * FROM customers WHERE dni = ?", [dni], (err, customer) => {
+  db.get("SELECT * FROM customers WHERE dni = $1", [dni], (err, customer) => {
     if (err) {
       return res.status(500).json({ message: "Error al buscar cliente." });
     }
@@ -97,7 +97,7 @@ const redeemHandler = (req, res) => {
       return res.status(404).json({ message: "Cliente no encontrado." });
     }
 
-    db.get("SELECT * FROM prizes WHERE id = ?", [prizeId], (err, prize) => {
+    db.get("SELECT * FROM prizes WHERE id = $1", [prizeId], (err, prize) => {
       if (err) {
         return res.status(500).json({ message: "Error al buscar premio." });
       }
@@ -121,11 +121,11 @@ const redeemHandler = (req, res) => {
       const userName = req.user?.username ?? null;
 
       db.run(
-        "UPDATE customers SET puntos = ? WHERE dni = ?",
+        "UPDATE customers SET puntos = $1 WHERE dni = $2",
         [newPoints, dni],
         () => {
           db.run(
-            "INSERT INTO transactions (customerId, type, operations, points, note, userId, userName) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO transactions (customerid, type, operations, points, note, userid, username) VALUES ($1, $2, $3, $4, $5, $6, $7)",
             [
               customer.id,
               "REDEEM",
