@@ -20,6 +20,7 @@ const app = express();
 const DEFAULT_TZ = "America/Argentina/Tucuman";
 const DAILY_SUMMARY_HOUR = 22;
 const BOT_LOG_PREFIX = "[BOT]";
+const DAILY_SUMMARY_ENABLED_ENV = "DAILY_SUMMARY_ENABLED";
 const schedulerState = {
   enabled: false,
   timezone: process.env.TZ || DEFAULT_TZ,
@@ -57,6 +58,11 @@ const scheduleDailySummary = () => {
     }
     scheduleDailySummary();
   }, delayMs);
+};
+
+const isDailySummaryEnabled = () => {
+  const raw = process.env[DAILY_SUMMARY_ENABLED_ENV];
+  return raw === "true" || raw === "1";
 };
 
 /* =======================
@@ -153,12 +159,18 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`Backend listening on port ${PORT}`);
 
   const shouldStartTelegramBot = Boolean(process.env.TELEGRAM_BOT_TOKEN);
-  if (shouldStartTelegramBot) {
+  const dailySummaryEnabled = isDailySummaryEnabled();
+
+  if (shouldStartTelegramBot && dailySummaryEnabled) {
     console.log(`${BOT_LOG_PREFIX} daily scheduler enabled.`);
     scheduleDailySummary();
-  } else {
+  } else if (!shouldStartTelegramBot) {
     console.log(
       `${BOT_LOG_PREFIX} daily scheduler disabled. Missing TELEGRAM_BOT_TOKEN.`
+    );
+  } else {
+    console.log(
+      `${BOT_LOG_PREFIX} daily scheduler disabled. ${DAILY_SUMMARY_ENABLED_ENV} is not true.`
     );
   }
 });
