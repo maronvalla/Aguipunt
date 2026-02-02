@@ -5,6 +5,7 @@ const express = require("express");
 const cors = require("cors");
 const { DateTime } = require("luxon");
 
+const { version } = require("./package.json");
 const authRoutes = require("./routes/auth");
 const { router: botRoutes, sendDailySummaryInternal } = require("./routes/bot");
 const customersRoutes = require("./routes/customers");
@@ -18,6 +19,12 @@ const requireAuth = require("./middleware/auth");
 const app = express();
 const DEFAULT_TZ = "America/Argentina/Tucuman";
 const DAILY_SUMMARY_HOUR = 22;
+const BOT_LOG_PREFIX = "[BOT]";
+const schedulerState = {
+  enabled: false,
+  timezone: process.env.TZ || DEFAULT_TZ,
+  nextRunAt: null,
+};
 
 const scheduleDailySummary = () => {
   const timezone = process.env.TZ || DEFAULT_TZ;
@@ -28,12 +35,25 @@ const scheduleDailySummary = () => {
   }
 
   const delayMs = nextRun.toMillis() - now.toMillis();
+  schedulerState.enabled = true;
+  schedulerState.timezone = timezone;
+  schedulerState.nextRunAt = nextRun.toISO();
+  console.log(`${BOT_LOG_PREFIX} daily scheduler configured`, {
+    timezone,
+    nextRunAt: schedulerState.nextRunAt,
+  });
 
   setTimeout(async () => {
     try {
-      await sendDailySummaryInternal();
+      console.log(`${BOT_LOG_PREFIX} sending summary`);
+      const result = await sendDailySummaryInternal();
+      if (result.skipped) {
+        console.log(`${BOT_LOG_PREFIX} skipped`, { reason: result.reason });
+      } else {
+        console.log(`${BOT_LOG_PREFIX} sent ok`);
+      }
     } catch (error) {
-      console.error("[bot] scheduled daily summary failed", error);
+      console.error(`${BOT_LOG_PREFIX} error sending summary`, error);
     }
     scheduleDailySummary();
   }, delayMs);
@@ -74,7 +94,14 @@ app.options("*", cors());
    Rutas públicas
 ======================= */
 app.get("/api/health", (_req, res) => {
-  res.status(200).json({ ok: true, time: new Date().toISOString() });
+  res.status(200).json({
+    ok: true,
+    time: new Date().toISOString(),
+    version,
+    schedulerEnabled: schedulerState.enabled,
+    schedulerTimezone: schedulerState.timezone,
+    schedulerNextRunAt: schedulerState.nextRunAt,
+  });
 });
 
 // auth público
@@ -127,11 +154,11 @@ app.listen(PORT, "0.0.0.0", () => {
 
   const shouldStartTelegramBot = Boolean(process.env.TELEGRAM_BOT_TOKEN);
   if (shouldStartTelegramBot) {
-    console.log("Telegram bot scheduler enabled.");
+    console.log(`${BOT_LOG_PREFIX} daily scheduler enabled.`);
     scheduleDailySummary();
   } else {
     console.log(
-      "Telegram bot scheduler disabled. Missing TELEGRAM_BOT_TOKEN."
+      `${BOT_LOG_PREFIX} daily scheduler disabled. Missing TELEGRAM_BOT_TOKEN.`
     );
   }
 });
