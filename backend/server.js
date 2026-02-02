@@ -5,6 +5,7 @@ const express = require("express");
 const cors = require("cors");
 
 const authRoutes = require("./routes/auth");
+const botRoutes = require("./routes/bot");
 const customersRoutes = require("./routes/customers");
 const pointsRoutes = require("./routes/points");
 const prizesRoutes = require("./routes/prizes");
@@ -88,6 +89,7 @@ app.get("/api/health", (_req, res) => {
 
 // auth público
 app.use("/api/auth", authRoutes);
+app.use("/api/bot", botRoutes);
 
 /* =======================
    Middleware JWT
