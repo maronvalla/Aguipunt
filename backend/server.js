@@ -14,40 +14,6 @@ const usersRoutes = require("./routes/users");
 
 const requireAuth = require("./middleware/auth");
 
-const app = express();
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const TELEGRAM_MESSAGE =
-  process.env.TELEGRAM_MESSAGE || "Recordatorio automático";
-const TELEGRAM_INTERVAL_MS = 60 * 1000;
-
-const shouldStartTelegramBot = Boolean(
-  TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID
-);
-
-const sendTelegramMessage = async () => {
-  if (!shouldStartTelegramBot) return;
-  try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: TELEGRAM_MESSAGE,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Telegram sendMessage failed:", errorText);
-    }
-  } catch (error) {
-    console.error("Telegram sendMessage error:", error);
-  }
-};
 
 /* =======================
    Middlewares base
