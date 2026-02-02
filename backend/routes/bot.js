@@ -64,21 +64,25 @@ const sendDailySummaryInternal = async () => {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = await resolveChatId();
 
+  if (!token) {
+    return { skipped: true, reason: "Missing TELEGRAM_BOT_TOKEN" };
+  }
+
   if (!chatId) {
-    throw new Error("Missing Telegram chat id");
+    return { skipped: true, reason: "Missing Telegram chat id" };
   }
 
   const summary = await buildDailySummary();
 
   const message = [
-    `Resumen diario (${summary.formattedDate})`,
-    `Total de puntos cargados: ${summary.totalPoints}`,
-    `Usuario con más puntos: ${summary.topUserName} (${summary.topUserPoints})`,
+    `📊 Aguipuntos — Resumen (${summary.formattedDate})`,
+    `✅ Puntos cargados hoy: ${summary.totalPoints}`,
+    `🏆 Usuario que más cargó: ${summary.topUserName} (${summary.topUserPoints} pts)`,
   ].join("\n");
 
   await sendTelegramMessage({ token, chatId, text: message });
 
-  return summary;
+  return { skipped: false, summary };
 };
 
 router.post(["/register", "/telegram-webhook"], async (req, res) => {
@@ -111,9 +115,13 @@ router.post("/daily-summary", async (req, res) => {
     if (!process.env.BOT_SECRET || secret !== process.env.BOT_SECRET) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const summary = await sendDailySummaryInternal();
+    const result = await sendDailySummaryInternal();
 
-    return res.status(200).json({ ok: true, summary });
+    if (result.skipped) {
+      return res.status(400).json({ ok: false, reason: result.reason });
+    }
+
+    return res.status(200).json({ ok: true, summary: result.summary });
   } catch (error) {
     console.error("[bot] daily summary failed", error);
     return res.status(500).json({ message: "Failed to send daily summary" });

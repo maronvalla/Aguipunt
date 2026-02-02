@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": "18.x"
+  },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.2",
     "vite": "^7.3.1"
