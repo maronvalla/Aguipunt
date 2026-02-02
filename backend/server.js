@@ -121,17 +121,17 @@ app.use((err, _req, res, _next) => {
 /* =======================
    Start
 ======================= */
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Backend listening on port ${PORT}`);
+/*
+// BOT VIEJO — DESACTIVADO
+const shouldStartTelegramBot = Boolean(process.env.TELEGRAM_BOT_TOKEN);
 
-  const shouldStartTelegramBot = Boolean(process.env.TELEGRAM_BOT_TOKEN);
-  if (shouldStartTelegramBot) {
-    console.log("Telegram bot scheduler enabled.");
-    scheduleDailySummary();
-  } else {
-    console.log(
-      "Telegram bot scheduler disabled. Missing TELEGRAM_BOT_TOKEN."
-    );
-  }
-});
+if (shouldStartTelegramBot) {
+  console.log("Telegram bot scheduler enabled.");
+  sendTelegramMessage();
+  setInterval(sendTelegramMessage, TELEGRAM_INTERVAL_MS);
+} else {
+  console.log(
+    "Telegram bot scheduler disabled. Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID."
+  );
+}
+*/
