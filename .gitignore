@@ -23,6 +23,7 @@ backend/dist/
 
 # misc
 .DS_Store
+.mise/
 
 **/node_modules/
 **/dist/
