@@ -23,6 +23,7 @@ TELEGRAM_BOT_TOKEN=...   # token del bot
 TELEGRAM_CHAT_ID=...     # opcional, se guarda al recibir /start
 BOT_SECRET=...           # secreto para endpoint diario
 TZ=America/Argentina/Tucuman
+DAILY_SUMMARY_ENABLED=true  # habilita el scheduler interno (opcional)
 ```
 
 ### Registrar chat_id
@@ -50,3 +51,4 @@ curl -X POST "https://<host>/api/bot/daily-summary?secret=BOT_SECRET"
 ```
 
 El endpoint está pensado para ejecutarse desde un scheduler externo (por ejemplo, cron-job.org a las 21:00).
+Si querés usar el scheduler interno del backend, definí `DAILY_SUMMARY_ENABLED=true`.
