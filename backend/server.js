@@ -3,9 +3,10 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+const { DateTime } = require("luxon");
 
 const authRoutes = require("./routes/auth");
-const botRoutes = require("./routes/bot");
+const { router: botRoutes, sendDailySummaryInternal } = require("./routes/bot");
 const customersRoutes = require("./routes/customers");
 const pointsRoutes = require("./routes/points");
 const prizesRoutes = require("./routes/prizes");
@@ -14,6 +15,29 @@ const usersRoutes = require("./routes/users");
 
 const requireAuth = require("./middleware/auth");
 
+const app = express();
+const DEFAULT_TZ = "America/Argentina/Tucuman";
+const DAILY_SUMMARY_HOUR = 22;
+
+const scheduleDailySummary = () => {
+  const timezone = process.env.TZ || DEFAULT_TZ;
+  const now = DateTime.now().setZone(timezone);
+  let nextRun = now.set({ hour: DAILY_SUMMARY_HOUR, minute: 0, second: 0, millisecond: 0 });
+  if (nextRun <= now) {
+    nextRun = nextRun.plus({ days: 1 });
+  }
+
+  const delayMs = nextRun.toMillis() - now.toMillis();
+
+  setTimeout(async () => {
+    try {
+      await sendDailySummaryInternal();
+    } catch (error) {
+      console.error("[bot] scheduled daily summary failed", error);
+    }
+    scheduleDailySummary();
+  }, delayMs);
+};
 
 /* =======================
    Middlewares base
@@ -101,13 +125,13 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Backend listening on port ${PORT}`);
 
+  const shouldStartTelegramBot = Boolean(process.env.TELEGRAM_BOT_TOKEN);
   if (shouldStartTelegramBot) {
     console.log("Telegram bot scheduler enabled.");
-    sendTelegramMessage();
-    setInterval(sendTelegramMessage, TELEGRAM_INTERVAL_MS);
+    scheduleDailySummary();
   } else {
     console.log(
-      "Telegram bot scheduler disabled. Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID."
+      "Telegram bot scheduler disabled. Missing TELEGRAM_BOT_TOKEN."
     );
   }
 });
