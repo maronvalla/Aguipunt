@@ -109,15 +109,23 @@ const buildDailySummary = async () => {
   };
 };
 
+const resolveChatId = async () => {
+  const chatIds = await getChatIds();
+  return chatIds[0] || null;
+};
+
 const sendDailySummaryInternal = async () => {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatIds = await getChatIds();
+  const chatId1 = await resolveChatId();
+  const chatId2 = process.env.TELEGRAM_CHAT_ID_2;
+  const recipients = [chatId1, chatId2].filter(Boolean).map(String);
+  const uniqueRecipients = [...new Set(recipients)];
 
   if (!token) {
     return { skipped: true, reason: "Missing TELEGRAM_BOT_TOKEN" };
   }
 
-  if (!chatIds.length) {
+  if (!uniqueRecipients.length) {
     return { skipped: true, reason: "Missing Telegram chat id" };
   }
 
@@ -129,13 +137,15 @@ const sendDailySummaryInternal = async () => {
     `🏆 Usuario que más cargó: ${summary.topUserName} (${summary.topUserPoints} pts)`,
   ].join("\n");
 
-  for (const chatId of chatIds) {
+  for (const chatId of uniqueRecipients) {
     try {
       await sendTelegramMessage({ token, chatId, text: message });
     } catch (error) {
       console.error("[bot] failed to send daily summary", { chatId, error });
     }
   }
+
+  console.info("[bot] daily summary sent", { chatIds: uniqueRecipients });
 
   return { skipped: false, summary };
 };
