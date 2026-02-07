@@ -101,10 +101,11 @@ function run(sql, params = [], cb) {
 
 function get(sql, params = [], cb) {
   const args = normalizeArgs(sql, params, cb);
-  const promise = pool.query(args.sql, args.params);
+  const promise = pool
+    .query(args.sql, args.params)
+    .then((result) => result.rows?.[0] || null);
   promise
-    .then((result) => {
-      const row = result.rows?.[0] || null;
+    .then((row) => {
       if (typeof args.cb === "function") args.cb(null, row);
     })
     .catch((err) => {
