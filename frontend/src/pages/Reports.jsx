@@ -47,6 +47,31 @@ export default function Reports() {
     setTo(range.to);
   }, [preset]);
 
+  const normalizeTotals = (data) => {
+    const totalsPayload = data?.totals;
+    if (!totalsPayload) return null;
+
+    const totalPointsLoaded =
+      totalsPayload.totalPointsLoaded ?? totalsPayload.total_points_loaded ?? null;
+    const totalVoided =
+      totalsPayload.totalVoided ?? totalsPayload.total_voided ?? null;
+    const totalNet = totalsPayload.totalNet ?? totalsPayload.total_net ?? null;
+
+    if (
+      totalPointsLoaded === null &&
+      totalVoided === null &&
+      totalNet === null
+    ) {
+      return null;
+    }
+
+    return {
+      totalPointsLoaded,
+      totalVoided,
+      totalNet,
+    };
+  };
+
   const fetchReport = async () => {
     setLoading(true);
     setError("");
@@ -65,7 +90,7 @@ export default function Reports() {
       const res = await api.get(
         `/api/reports/points-loaded?${params.toString()}`
       );
-      setTotals(res.data.totals || null);
+      setTotals(normalizeTotals(res.data));
       setItems(res.data.items || []);
     } catch (e) {
       if (e?.response?.status === 404) {
@@ -165,19 +190,19 @@ export default function Reports() {
           <div>
             <div className="text-xs text-slate-500">Total cargado</div>
             <div className="text-lg font-bold text-slate-800">
-              {totals ? totals.totalPointsLoaded : "-"}
+              {totals?.totalPointsLoaded ?? "-"}
             </div>
           </div>
           <div>
             <div className="text-xs text-slate-500">Total anulaciones</div>
             <div className="text-lg font-bold text-slate-800">
-              {totals ? totals.totalVoided : "-"}
+              {totals?.totalVoided ?? "-"}
             </div>
           </div>
           <div>
             <div className="text-xs text-slate-500">Total neto</div>
             <div className="text-lg font-bold text-slate-800">
-              {totals ? totals.totalNet : "-"}
+              {totals?.totalNet ?? "-"}
             </div>
           </div>
         </div>
