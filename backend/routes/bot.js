@@ -1,7 +1,6 @@
 const express = require("express");
-const { DateTime } = require("luxon");
-
 const db = require("../db");
+const { buildDailySummary } = require("../services/dailySummary");
 const {
   getChatIdFromUpdate,
   isStartCommand,
@@ -12,8 +11,6 @@ const router = express.Router();
 
 const SETTINGS_KEY_CHAT = "telegram_chat_id";
 const SETTINGS_KEY_CHATS = "telegram_chat_ids";
-const DEFAULT_TZ = "America/Argentina/Tucuman";
-
 const upsertSetting = async (key, value) => {
   await db.run(
     "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
@@ -78,35 +75,6 @@ const addChatId = async (chatId) => {
   const next = [...existing, normalized];
   await upsertSetting(SETTINGS_KEY_CHATS, next.join(","));
   return next;
-};
-
-const buildDailySummary = async () => {
-  const timezone = process.env.TZ || DEFAULT_TZ;
-  const now = DateTime.now().setZone(timezone);
-  const start = now.startOf("day").toUTC().toJSDate();
-  const end = now.endOf("day").toUTC().toJSDate();
-
-  const totalRow = await db.get(
-    "SELECT COALESCE(SUM(points), 0) AS total FROM transactions WHERE type = 'LOAD' AND createdat >= $1 AND createdat <= $2",
-    [start, end]
-  );
-
-  const topRow = await db.get(
-    "SELECT username, SUM(points) AS total FROM transactions WHERE type = 'LOAD' AND createdat >= $1 AND createdat <= $2 GROUP BY username ORDER BY total DESC NULLS LAST LIMIT 1",
-    [start, end]
-  );
-
-  const totalPoints = Number(totalRow?.total || 0);
-  const topUserName = topRow?.username || "Sin registros";
-  const topUserPoints = Number(topRow?.total || 0);
-
-  const formattedDate = now.toFormat("dd/LL/yyyy");
-  return {
-    totalPoints,
-    topUserName,
-    topUserPoints,
-    formattedDate,
-  };
 };
 
 const resolveChatId = async () => {

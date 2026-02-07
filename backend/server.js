@@ -21,6 +21,11 @@ const DEFAULT_TZ = "America/Argentina/Tucuman";
 const DAILY_SUMMARY_HOUR = 22;
 const BOT_LOG_PREFIX = "[BOT]";
 const DAILY_SUMMARY_ENABLED_ENV = "DAILY_SUMMARY_ENABLED";
+const DEFAULT_CORS_ORIGINS = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://aguipunt.vercel.app",
+];
 const schedulerState = {
   enabled: false,
   timezone: process.env.TZ || DEFAULT_TZ,
@@ -65,6 +70,31 @@ const isDailySummaryEnabled = () => {
   return raw === "true" || raw === "1";
 };
 
+const getCorsOrigins = () => {
+  const raw = String(process.env.CORS_ORIGIN || "").trim();
+  if (!raw) return DEFAULT_CORS_ORIGINS;
+  return raw
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+};
+
+const corsOrigins = getCorsOrigins();
+const allowAllCors = corsOrigins.includes("*");
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  if (allowAllCors) return true;
+  return corsOrigins.includes(origin);
+};
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) return callback(null, true);
+    return callback(null, false);
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
 /* =======================
    Middlewares base
 ======================= */
@@ -73,28 +103,26 @@ app.use(express.json());
 app.use((req, res, next) => {
   if (req.method !== "OPTIONS") return next();
 
-  const origin = req.headers.origin || "*";
-  res.setHeader("Access-Control-Allow-Origin", origin);
-  res.setHeader("Vary", "Origin");
+  const origin = req.headers.origin || "";
+  if (!isOriginAllowed(origin)) {
+    return res.sendStatus(403);
+  }
+
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", allowAllCors ? "*" : origin);
+    res.setHeader("Vary", "Origin");
+  } else if (allowAllCors) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   return res.sendStatus(204);
 });
 
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "https://aguipunt.vercel.app",
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+app.use(cors(corsOptions));
 
 // IMPORTANTE: responder preflight SIEMPRE
-app.options("*", cors());
+app.options("*", cors(corsOptions));
 
 /* =======================
    Rutas públicas

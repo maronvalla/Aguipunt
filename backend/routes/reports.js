@@ -1,22 +1,14 @@
 const express = require("express");
 const db = require("../db");
 const requireRole = require("../middleware/requireRole");
+const { buildTransactionsFilters, buildDailyRange } = require("../services/dailySummary");
 const router = express.Router();
-
-const getArgentinaToday = () => {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Argentina/Buenos_Aires",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-};
 
 router.get(
   "/points-loaded",
   requireRole("admin"),
   (req, res) => {
-    const today = getArgentinaToday();
+    const today = buildDailyRange().startISODate;
     const from = String(req.query.from || "").trim() || today;
     const to = String(req.query.to || "").trim() || today;
     const userIdRaw = String(req.query.userId || "").trim();
@@ -30,26 +22,15 @@ router.get(
       });
     }
 
-    const params = [];
-    const addParam = (value) => {
-      params.push(value);
-      return `$${params.length}`;
-    };
-    const whereParts = [
-      "t.type = 'LOAD'",
-      "t.voidedat IS NULL",
-      `date(t.createdat) >= date(${addParam(from)})`,
-      `date(t.createdat) <= date(${addParam(to)})`,
-    ];
-    if (userId !== null) {
-      whereParts.push(`t.userid = ${addParam(userId)}`);
-    } else if (userName) {
-      whereParts.push(`t.username = ${addParam(userName)}`);
-    }
-    const where = `WHERE ${whereParts.join(" AND ")}`;
+    const { where, params } = buildTransactionsFilters({
+      from,
+      to,
+      userId,
+      userName,
+    });
 
     db.get(
-      `SELECT COALESCE(SUM(t.points), 0) as totalPointsLoaded
+      `SELECT COALESCE(SUM(t.points), 0) as total_points_loaded
        FROM transactions t
        ${where}`,
       params,
@@ -66,24 +47,6 @@ router.get(
             );
         }
 
-        const itemParams = [];
-        const addItemParam = (value) => {
-          itemParams.push(value);
-          return `$${itemParams.length}`;
-        };
-        const itemWhereParts = [
-          "t.type = 'LOAD'",
-          "t.voidedat IS NULL",
-          `date(t.createdat) >= date(${addItemParam(from)})`,
-          `date(t.createdat) <= date(${addItemParam(to)})`,
-        ];
-        if (userId !== null) {
-          itemWhereParts.push(`t.userid = ${addItemParam(userId)}`);
-        } else if (userName) {
-          itemWhereParts.push(`t.username = ${addItemParam(userName)}`);
-        }
-        const itemWhere = `WHERE ${itemWhereParts.join(" AND ")}`;
-
         db.all(
           `SELECT t.id,
                   t.createdat AS "createdAt",
@@ -96,9 +59,9 @@ router.get(
                   c.nombre as customerNombre
            FROM transactions t
            JOIN customers c ON c.id = t.customerid
-           ${itemWhere}
+           ${where}
            ORDER BY t.createdat DESC`,
-          itemParams,
+          params,
           (err, rows) => {
             if (err) {
               console.error("Error al cargar reporte:", err);
@@ -111,7 +74,7 @@ router.get(
                     : { message, detail: err.message }
                 );
             }
-            const totalPointsLoaded = sumRow?.totalPointsLoaded || 0;
+            const totalPointsLoaded = sumRow?.total_points_loaded || 0;
             res.json({
               totals: {
                 totalPointsLoaded,

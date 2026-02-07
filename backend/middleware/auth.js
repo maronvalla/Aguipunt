@@ -23,8 +23,13 @@ module.exports = (req, res, next) => {
     return res.status(401).json({ message: "Token inválido." });
   }
 
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    return res.status(500).json({ message: "Configuración inválida del servidor." });
+  }
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, jwtSecret);
     req.user = decoded;
     next();
   } catch (err) {

@@ -47,10 +47,18 @@ router.post("/login", (req, res) => {
         return res.status(401).json({ message: "Credenciales inválidas." });
       }
 
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        if (timingEnabled) console.timeEnd("login");
+        return res
+          .status(500)
+          .json({ message: "Configuración inválida del servidor." });
+      }
+
       const role = user.role || "admin";
       const token = jwt.sign(
         { id: user.id, username: user.username, role },
-        process.env.JWT_SECRET || "SECRET_KEY",
+        jwtSecret,
         {
           expiresIn: "8h",
         }
