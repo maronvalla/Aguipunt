@@ -104,7 +104,7 @@ app.use(express.json());
 app.use(cors(corsOptions));
 
 // IMPORTANTE: responder preflight SIEMPRE
-app.options("*", cors(corsOptions));
+app.options("*", cors());
 
 /* =======================
    Rutas públicas
