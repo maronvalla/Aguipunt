@@ -93,31 +93,13 @@ const corsOptions = {
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 204,
 };
 
 /* =======================
    Middlewares base
 ======================= */
 app.use(express.json());
-
-app.use((req, res, next) => {
-  if (req.method !== "OPTIONS") return next();
-
-  const origin = req.headers.origin || "";
-  if (!isOriginAllowed(origin)) {
-    return res.sendStatus(403);
-  }
-
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", allowAllCors ? "*" : origin);
-    res.setHeader("Vary", "Origin");
-  } else if (allowAllCors) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-  }
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  return res.sendStatus(204);
-});
 
 app.use(cors(corsOptions));
 
