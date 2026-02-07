@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
 const rangeFromPreset = (preset) => {
@@ -40,6 +41,7 @@ export default function Reports() {
   const [voidTargetId, setVoidTargetId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const range = rangeFromPreset(preset);
@@ -130,6 +132,27 @@ export default function Reports() {
       fetchReport();
     } catch (e) {
       setError(e?.response?.data?.message || "Error al anular la carga.");
+    }
+  };
+
+  const resolveCustomerId = async (row) => {
+    if (row?.customerId) return row.customerId;
+    if (!row?.customerDni) return null;
+    try {
+      const res = await api.get(`/api/customers/customers/${row.customerDni}`);
+      return res.data?.id || null;
+    } catch (e) {
+      setError(
+        e?.response?.data?.message || "No se pudo abrir el cliente."
+      );
+      return null;
+    }
+  };
+
+  const handleOpenCustomer = async (row) => {
+    const id = await resolveCustomerId(row);
+    if (id) {
+      navigate(`/customers/${id}`);
     }
   };
 
@@ -225,15 +248,26 @@ export default function Reports() {
               <div>{new Date(t.createdAt).toLocaleString()}</div>
               <div className="text-slate-600">{t.userName || t.userId}</div>
               <div className="text-slate-600">
-                {t.customerDni && t.customerName
-                  ? `${t.customerDni} - ${t.customerName}`
-                  : t.customerName
-                  ? t.customerName
-                  : t.customerDni
-                  ? t.customerDni
-                  : t.customerId
-                  ? `ID ${t.customerId}`
-                  : "Sin cliente"}
+                {t.customerId || t.customerDni ? (
+                  <button
+                    type="button"
+                    className="text-slate-700 underline hover:text-slate-900"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleOpenCustomer(t);
+                    }}
+                  >
+                    {t.customerDni && t.customerName
+                      ? `${t.customerDni} - ${t.customerName}`
+                      : t.customerName
+                      ? t.customerName
+                      : t.customerDni
+                      ? t.customerDni
+                      : `ID ${t.customerId}`}
+                  </button>
+                ) : (
+                  "Sin cliente"
+                )}
               </div>
               <div>{t.operations || "-"}</div>
               <div className="text-emerald-600">+{t.points}</div>
