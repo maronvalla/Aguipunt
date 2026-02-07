@@ -14,13 +14,17 @@ const buildDailyRange = ({ from, to, timezone } = {}) => {
 
   const start = startDate.startOf("day");
   const end = endDate.plus({ days: 1 }).startOf("day");
+  const startUtc = start.toUTC();
+  const endUtc = end.toUTC();
 
   return {
     zone,
     start,
     end,
-    startSql: formatSqlTimestamp(start),
-    endSql: formatSqlTimestamp(end),
+    startUtc,
+    endUtc,
+    startSql: formatSqlTimestamp(startUtc),
+    endSql: formatSqlTimestamp(endUtc),
     formattedDate: startDate.toFormat("dd/LL/yyyy"),
     startISODate: startDate.toISODate(),
   };

@@ -1,5 +1,6 @@
 const express = require("express");
 const db = require("../db");
+const { getUtcIsoNow } = require("../services/time");
 const router = express.Router();
 
 router.post("/points/load", (req, res) => {
@@ -44,9 +45,10 @@ const userName = req.user?.username ?? null;
             opsValue = puntos / 50;
           }
 
+          const createdAt = getUtcIsoNow();
           db.run(
-            "INSERT INTO transactions (customerid, type, operations, points, note, userid, username) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-            [customer.id, "LOAD", opsValue, puntos, null, userId, userName],
+            "INSERT INTO transactions (customerid, type, operations, points, note, userid, username, createdat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            [customer.id, "LOAD", opsValue, puntos, null, userId, userName, createdAt],
             () => {
               res.json({
                 message: "Puntos cargados correctamente.",
@@ -105,9 +107,10 @@ const userName = req.user?.username ?? null;
         "UPDATE customers SET puntos = $1 WHERE dni = $2",
         [newPoints, dni],
         () => {
+          const createdAt = getUtcIsoNow();
           db.run(
-            "INSERT INTO transactions (customerid, type, operations, points, note, userid, username) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-            [customer.id, "REDEEM", null, -puntos, noteValue, userId, userName],
+            "INSERT INTO transactions (customerid, type, operations, points, note, userid, username, createdat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            [customer.id, "REDEEM", null, -puntos, noteValue, userId, userName, createdAt],
             () => {
               res.json({
                 message: "Puntos canjeados correctamente.",

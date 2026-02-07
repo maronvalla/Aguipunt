@@ -117,7 +117,7 @@ router.get("/customers/:id/transactions", requireRole("admin"), (req, res) => {
            voidedbyuserid AS "voidedByUserId",
            voidreason AS "voidReason",
            originaltransactionid AS "originalTransactionId",
-           createdat AS "createdAt"
+           to_char(createdat, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS "createdAt"
     FROM transactions
     ${where}
     ORDER BY createdAt ${order}
@@ -168,7 +168,7 @@ router.get(
 
   const where = `WHERE ${whereParts.join(" AND ")}`;
   const sql = `
-    SELECT createdat AS "createdAt",
+    SELECT to_char(createdat, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS "createdAt",
            type,
            operations,
            points,

@@ -1,6 +1,7 @@
 const express = require("express");
 const db = require("../db");
 const requireRole = require("../middleware/requireRole");
+const { getUtcIsoNow } = require("../services/time");
 const router = express.Router();
 
 router.get("/prizes", (req, res) => {
@@ -124,8 +125,9 @@ const redeemHandler = (req, res) => {
         "UPDATE customers SET puntos = $1 WHERE dni = $2",
         [newPoints, dni],
         () => {
+          const createdAt = getUtcIsoNow();
           db.run(
-            "INSERT INTO transactions (customerid, type, operations, points, note, userid, username) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            "INSERT INTO transactions (customerid, type, operations, points, note, userid, username, createdat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
             [
               customer.id,
               "REDEEM",
@@ -134,6 +136,7 @@ const redeemHandler = (req, res) => {
               noteValue,
               userId,
               userName,
+              createdAt,
             ],
             () => {
               res.json({

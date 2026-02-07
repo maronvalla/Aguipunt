@@ -37,7 +37,7 @@ router.get(
       const totals = await getDailyTotals({ from, to, userId, userName });
       const listResult = await db.all(
         `SELECT t.id,
-                t.createdat AS "createdAt",
+                to_char(t.createdat, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS "createdAt",
                 t.points,
                 t.operations,
                 t.userid AS "userId",

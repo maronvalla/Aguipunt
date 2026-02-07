@@ -1,6 +1,7 @@
 const express = require("express");
 const db = require("../db");
 const requireRole = require("../middleware/requireRole");
+const { getUtcIsoNow } = require("../services/time");
 const router = express.Router();
 
 router.post(
@@ -45,22 +46,23 @@ router.post(
             const voidedByUserName = req.user?.username ?? null;
             const note = `AnulaciÃ³n de carga #${tx.id}${reason ? `: ${reason}` : ""}`;
 
+            const createdAt = getUtcIsoNow();
             db.run(
               "UPDATE customers SET puntos = $1 WHERE id = $2",
               [newPoints, customer.id],
               () => {
                 db.run(
                   `UPDATE transactions
-                   SET voidedat = NOW(),
-                       voidedbyuserid = $1,
-                       voidreason = $2
-                   WHERE id = $3`,
-                  [voidedByUserId, reason || null, id],
+                   SET voidedat = $1,
+                       voidedbyuserid = $2,
+                       voidreason = $3
+                   WHERE id = $4`,
+                  [createdAt, voidedByUserId, reason || null, id],
                   () => {
                     db.run(
                       `INSERT INTO transactions
-                        (customerid, type, operations, points, note, userid, username, originaltransactionid)
-                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+                        (customerid, type, operations, points, note, userid, username, originaltransactionid, createdat)
+                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
                       [
                         tx.customerid,
                         "ADJUST",
@@ -70,6 +72,7 @@ router.post(
                         voidedByUserId,
                         voidedByUserName,
                         tx.id,
+                        createdAt,
                       ],
                       function () {
                         res.json({
