@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { formatTucumanDateTime } from "../utils/date";
 
 const rangeFromPreset = (preset) => {
   const now = new Date();
@@ -245,7 +246,7 @@ export default function Reports() {
               key={t.id}
               className="grid grid-cols-7 gap-2 px-3 py-2 text-sm border-t border-slate-200 hover:bg-slate-100"
             >
-              <div>{new Date(t.createdAt).toLocaleString()}</div>
+              <div>{formatTucumanDateTime(t.createdAt)}</div>
               <div className="text-slate-600">{t.userName || t.userId}</div>
               <div className="text-slate-600">
                 {t.customerId || t.customerDni ? (

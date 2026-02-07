@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../api/axios";
+import { formatTucumanDateTime } from "../utils/date";
 
 const PAGE_SIZE = 50;
 
@@ -211,7 +212,7 @@ export default function CustomerDetail() {
               key={t.id}
               className="grid grid-cols-7 gap-2 px-3 py-2 text-sm border-t border-slate-200 hover:bg-slate-100"
             >
-              <div>{new Date(t.createdAt).toLocaleString()}</div>
+              <div>{formatTucumanDateTime(t.createdAt)}</div>
               <div>{formatType(t.type)}</div>
               <div>{t.operations || "-"}</div>
               <div
