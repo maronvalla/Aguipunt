@@ -225,7 +225,15 @@ export default function Reports() {
               <div>{new Date(t.createdAt).toLocaleString()}</div>
               <div className="text-slate-600">{t.userName || t.userId}</div>
               <div className="text-slate-600">
-                {t.customerNombre} ({t.customerDni})
+                {t.customerDni && t.customerName
+                  ? `${t.customerDni} - ${t.customerName}`
+                  : t.customerName
+                  ? t.customerName
+                  : t.customerDni
+                  ? t.customerDni
+                  : t.customerId
+                  ? `ID ${t.customerId}`
+                  : "Sin cliente"}
               </div>
               <div>{t.operations || "-"}</div>
               <div className="text-emerald-600">+{t.points}</div>

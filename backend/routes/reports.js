@@ -43,8 +43,8 @@ router.get(
                 t.userid AS "userId",
                 t.username AS "userName",
                 t.customerid AS "customerId",
-                c.dni as customerDni,
-                c.nombre as customerNombre
+                c.dni AS "customerDni",
+                c.nombre AS "customerName"
          FROM transactions t
          JOIN customers c ON c.id = t.customerid
          ${where}
