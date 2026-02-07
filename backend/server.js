@@ -21,11 +21,6 @@ const DEFAULT_TZ = "America/Argentina/Tucuman";
 const DAILY_SUMMARY_HOUR = 22;
 const BOT_LOG_PREFIX = "[BOT]";
 const DAILY_SUMMARY_ENABLED_ENV = "DAILY_SUMMARY_ENABLED";
-const DEFAULT_CORS_ORIGINS = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "https://aguipunt.vercel.app",
-];
 const schedulerState = {
   enabled: false,
   timezone: process.env.TZ || DEFAULT_TZ,
@@ -70,29 +65,15 @@ const isDailySummaryEnabled = () => {
   return raw === "true" || raw === "1";
 };
 
-const getCorsOrigins = () => {
-  const raw = String(process.env.CORS_ORIGIN || "").trim();
-  if (!raw) return DEFAULT_CORS_ORIGINS;
-  return raw
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-};
-
-const corsOrigins = getCorsOrigins();
-const allowAllCors = corsOrigins.includes("*");
-const isOriginAllowed = (origin) => {
-  if (!origin) return true;
-  if (allowAllCors) return true;
-  return corsOrigins.includes(origin);
-};
 const corsOptions = {
-  origin: (origin, callback) => {
-    if (isOriginAllowed(origin)) return callback(null, true);
-    return callback(null, false);
-  },
+  origin: [
+    "https://aguipunt.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:5174",
+  ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: false,
   optionsSuccessStatus: 204,
 };
 
@@ -104,7 +85,7 @@ app.use(express.json());
 app.use(cors(corsOptions));
 
 // IMPORTANTE: responder preflight SIEMPRE
-app.options("*", cors());
+app.options("*", cors(corsOptions));
 
 /* =======================
    Rutas públicas
