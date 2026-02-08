@@ -84,9 +84,10 @@ export default function RedeemPrize() {
       timeZone: "America/Argentina/Tucuman",
     });
 
-    const receiptHtml = `
+    const receiptHtml = (copyLabel) => `
       <div class="receipt">
         <div class="title">Recibo Aguipuntos</div>
+        <div class="copy">${copyLabel}</div>
         <div class="row"><span class="label">Fecha:</span> ${formatted}</div>
         <div class="row"><span class="label">Nombre:</span> ${safeName}</div>
         <div class="row"><span class="label">DNI:</span> ${safeDni}</div>
@@ -118,13 +119,14 @@ export default function RedeemPrize() {
             .line { border-top: 1px solid #000; margin-top: 18px; }
             .center { text-align: center; }
             .small { font-size: 11px; }
-            .spacer { height: 6mm; }
+            .copy { text-align: center; font-size: 11px; margin-bottom: 6px; }
+            .spacer { height: 12mm; }
           </style>
         </head>
         <body>
-          ${receiptHtml}
+          ${receiptHtml("Copia cliente")}
           <div class="spacer"></div>
-          ${receiptHtml}
+          ${receiptHtml("Copia comercio")}
           <script>
             window.onload = () => {
               window.print();
