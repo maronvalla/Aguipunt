@@ -140,6 +140,19 @@ export default function RedeemPrize() {
     return prize?.costo_puntos ?? 0;
   };
 
+  const resolveReceiptName = async (dniValue) => {
+    if (customerName) return customerName;
+    if (!dniValue) return "";
+    try {
+      const res = await api.get(`/api/customers/customers/${dniValue}`);
+      const name = res.data?.nombre || "";
+      if (name) setCustomerName(name);
+      return name;
+    } catch {
+      return "";
+    }
+  };
+
   useEffect(() => {
     fetchPrizes();
   }, []);
@@ -154,8 +167,9 @@ export default function RedeemPrize() {
       });
       setCurrentPoints(res.data.newPoints);
       setMessage(`Te quedan: ${res.data.newPoints} puntos.`);
+      const nameForReceipt = await resolveReceiptName(dni);
       openReceiptPrint({
-        name: customerName,
+        name: nameForReceipt,
         dniValue: dni,
         points: getPrizePoints(),
       });
@@ -182,8 +196,9 @@ export default function RedeemPrize() {
       setMessage(`Te quedan: ${res.data.newPoints} puntos.`);
       setCustomPoints("");
       setCustomNote("");
+      const nameForReceipt = await resolveReceiptName(dni);
       openReceiptPrint({
-        name: customerName,
+        name: nameForReceipt,
         dniValue: dni,
         points: Number(customPoints),
       });
