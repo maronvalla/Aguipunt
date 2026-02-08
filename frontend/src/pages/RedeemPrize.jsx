@@ -119,7 +119,7 @@ export default function RedeemPrize() {
             .title { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 6px; }
             .row { font-size: 12px; margin: 4px 0; }
             .label { font-weight: bold; }
-            .signature { margin-top: 18px; }
+            .signature { margin-top: 28px; }
             .line { border-top: 1px solid #000; margin-top: 18px; }
             .center { text-align: center; }
             .small { font-size: 11px; }
