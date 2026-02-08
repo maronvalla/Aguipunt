@@ -84,6 +84,23 @@ export default function RedeemPrize() {
       timeZone: "America/Argentina/Tucuman",
     });
 
+    const receiptHtml = `
+      <div class="receipt">
+        <div class="title">Recibo Aguipuntos</div>
+        <div class="row"><span class="label">Fecha:</span> ${formatted}</div>
+        <div class="row"><span class="label">Nombre:</span> ${safeName}</div>
+        <div class="row"><span class="label">DNI:</span> ${safeDni}</div>
+        <div class="row"><span class="label">Puntos a canjear:</span> ${safePoints}</div>
+        <div class="row small">
+          El cliente declara que desea canjear los puntos indicados.
+        </div>
+        <div class="signature">
+          <div class="line"></div>
+          <div class="center small">Firma</div>
+        </div>
+      </div>
+    `;
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -101,23 +118,13 @@ export default function RedeemPrize() {
             .line { border-top: 1px solid #000; margin-top: 18px; }
             .center { text-align: center; }
             .small { font-size: 11px; }
+            .spacer { height: 6mm; }
           </style>
         </head>
         <body>
-          <div class="receipt">
-            <div class="title">Recibo de Canje</div>
-            <div class="row"><span class="label">Fecha:</span> ${formatted}</div>
-            <div class="row"><span class="label">Nombre:</span> ${safeName}</div>
-            <div class="row"><span class="label">DNI:</span> ${safeDni}</div>
-            <div class="row"><span class="label">Puntos a canjear:</span> ${safePoints}</div>
-            <div class="row small">
-              El cliente declara que desea canjear los puntos indicados.
-            </div>
-            <div class="signature">
-              <div class="line"></div>
-              <div class="center small">Firma</div>
-            </div>
-          </div>
+          ${receiptHtml}
+          <div class="spacer"></div>
+          ${receiptHtml}
           <script>
             window.onload = () => {
               window.print();
