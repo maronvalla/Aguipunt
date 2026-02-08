@@ -75,10 +75,13 @@ export default function RedeemPrize() {
     }
   };
 
-  const openReceiptPrint = ({ name, dniValue, points }) => {
+  const openReceiptPrint = ({ name, dniValue, points, remainingPoints }) => {
     const safeName = name || "Sin nombre";
     const safeDni = dniValue || "Sin DNI";
     const safePoints = Number.isFinite(Number(points)) ? Number(points) : 0;
+    const safeRemaining = Number.isFinite(Number(remainingPoints))
+      ? Number(remainingPoints)
+      : 0;
     const now = new Date();
     const formatted = now.toLocaleString("es-AR", {
       timeZone: "America/Argentina/Tucuman",
@@ -92,6 +95,7 @@ export default function RedeemPrize() {
         <div class="row"><span class="label">Nombre:</span> ${safeName}</div>
         <div class="row"><span class="label">DNI:</span> ${safeDni}</div>
         <div class="row"><span class="label">Puntos a canjear:</span> ${safePoints}</div>
+        <div class="row"><span class="label">Puntos restantes:</span> ${safeRemaining}</div>
         <div class="row small">
           El cliente declara que desea canjear los puntos indicados.
         </div>
@@ -181,6 +185,7 @@ export default function RedeemPrize() {
         name: nameForReceipt,
         dniValue: dni,
         points: getPrizePoints(),
+        remainingPoints: res.data.newPoints,
       });
       fetchTransactions(customerId);
     } catch (e) {
@@ -210,6 +215,7 @@ export default function RedeemPrize() {
         name: nameForReceipt,
         dniValue: dni,
         points: Number(customPoints),
+        remainingPoints: res.data.newPoints,
       });
       fetchTransactions(customerId);
     } catch (e) {
