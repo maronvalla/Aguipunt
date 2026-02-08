@@ -4,6 +4,7 @@ import api from "../api/axios";
 export default function RedeemPrize() {
   const [dni, setDni] = useState("");
   const [customerId, setCustomerId] = useState(null);
+  const [customerName, setCustomerName] = useState("");
   const [currentPoints, setCurrentPoints] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [txError, setTxError] = useState("");
@@ -50,10 +51,12 @@ export default function RedeemPrize() {
     try {
       const res = await api.get(`/api/customers/customers/${dni}`);
       setCustomerId(res.data.id);
+      setCustomerName(res.data.nombre || "");
       setCurrentPoints(res.data.puntos);
       fetchTransactions(res.data.id);
     } catch (e) {
       setCustomerId(null);
+      setCustomerName("");
       setCurrentPoints(null);
       setTransactions([]);
       setError(e?.response?.data?.message || "Error al buscar cliente.");
@@ -72,6 +75,71 @@ export default function RedeemPrize() {
     }
   };
 
+  const openReceiptPrint = ({ name, dniValue, points }) => {
+    const safeName = name || "Sin nombre";
+    const safeDni = dniValue || "Sin DNI";
+    const safePoints = Number.isFinite(Number(points)) ? Number(points) : 0;
+    const now = new Date();
+    const formatted = now.toLocaleString("es-AR", {
+      timeZone: "America/Argentina/Tucuman",
+    });
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8" />
+          <title>Recibo Canje</title>
+          <style>
+            @page { size: 80mm auto; margin: 0; }
+            body { font-family: Arial, sans-serif; margin: 0; }
+            .receipt { width: 72mm; padding: 6mm 4mm; }
+            .title { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 6px; }
+            .row { font-size: 12px; margin: 4px 0; }
+            .label { font-weight: bold; }
+            .signature { margin-top: 18px; }
+            .line { border-top: 1px solid #000; margin-top: 18px; }
+            .center { text-align: center; }
+            .small { font-size: 11px; }
+          </style>
+        </head>
+        <body>
+          <div class="receipt">
+            <div class="title">Recibo de Canje</div>
+            <div class="row"><span class="label">Fecha:</span> ${formatted}</div>
+            <div class="row"><span class="label">Nombre:</span> ${safeName}</div>
+            <div class="row"><span class="label">DNI:</span> ${safeDni}</div>
+            <div class="row"><span class="label">Puntos a canjear:</span> ${safePoints}</div>
+            <div class="row small">
+              El cliente declara que desea canjear los puntos indicados.
+            </div>
+            <div class="signature">
+              <div class="line"></div>
+              <div class="center small">Firma</div>
+            </div>
+          </div>
+          <script>
+            window.onload = () => {
+              window.print();
+              window.close();
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open("", "print-receipt", "width=380,height=600");
+    if (!printWindow) return;
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
+  const getPrizePoints = () => {
+    const prize = prizes.find((p) => String(p.id) === String(premioId));
+    return prize?.costo_puntos ?? 0;
+  };
+
   useEffect(() => {
     fetchPrizes();
   }, []);
@@ -86,6 +154,11 @@ export default function RedeemPrize() {
       });
       setCurrentPoints(res.data.newPoints);
       setMessage(`Te quedan: ${res.data.newPoints} puntos.`);
+      openReceiptPrint({
+        name: customerName,
+        dniValue: dni,
+        points: getPrizePoints(),
+      });
       fetchTransactions(customerId);
     } catch (e) {
       const data = e?.response?.data;
@@ -109,6 +182,11 @@ export default function RedeemPrize() {
       setMessage(`Te quedan: ${res.data.newPoints} puntos.`);
       setCustomPoints("");
       setCustomNote("");
+      openReceiptPrint({
+        name: customerName,
+        dniValue: dni,
+        points: Number(customPoints),
+      });
       fetchTransactions(customerId);
     } catch (e) {
       const data = e?.response?.data;
