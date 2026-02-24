@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { formatTucumanDateTime } from "../utils/date";
@@ -46,6 +46,7 @@ export default function Reports() {
   const [voidTargetId, setVoidTargetId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const reportRequestIdRef = useRef(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -112,6 +113,7 @@ export default function Reports() {
   };
 
   const fetchReport = async () => {
+    const requestId = ++reportRequestIdRef.current;
     setLoading(true);
     setError("");
     setTotals(null);
@@ -136,9 +138,11 @@ export default function Reports() {
       ]);
 
       if (loadedRes.status === "fulfilled") {
+        if (requestId !== reportRequestIdRef.current) return;
         setTotals(normalizeTotals(loadedRes.value.data));
         setItems(loadedRes.value.data.items || []);
       } else {
+        if (requestId !== reportRequestIdRef.current) return;
         const e = loadedRes.reason;
         const loadedMessage =
           e?.response?.data?.detail ||
@@ -148,9 +152,11 @@ export default function Reports() {
       }
 
       if (redeemedRes.status === "fulfilled") {
+        if (requestId !== reportRequestIdRef.current) return;
         setRedeemedTotals(normalizeRedeemedTotals(redeemedRes.value.data));
         setRedeemedItems(redeemedRes.value.data.items || []);
       } else {
+        if (requestId !== reportRequestIdRef.current) return;
         const e = redeemedRes.reason;
         const redeemedMessage =
           e?.response?.data?.detail ||
@@ -161,6 +167,7 @@ export default function Reports() {
         );
       }
     } catch (e) {
+      if (requestId !== reportRequestIdRef.current) return;
       if (e?.response?.status === 404) {
         setError("Endpoint de reportes no encontrado (404).");
       } else {
@@ -171,6 +178,7 @@ export default function Reports() {
         setError(message);
       }
     } finally {
+      if (requestId !== reportRequestIdRef.current) return;
       setLoading(false);
     }
   };
