@@ -30,6 +30,18 @@ const rangeFromPreset = (preset) => {
   return { from: "", to: "" };
 };
 
+const normalizeDateParam = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const mmddyyyy = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (mmddyyyy) {
+    const [, mm, dd, yyyy] = mmddyyyy;
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return "";
+};
+
 export default function Reports() {
   const [preset, setPreset] = useState("day");
   const [from, setFrom] = useState("");
@@ -122,8 +134,10 @@ export default function Reports() {
     setRedeemedItems([]);
     try {
       const params = new URLSearchParams();
-      if (from) params.set("from", from);
-      if (to) params.set("to", to);
+      const fromParam = normalizeDateParam(from);
+      const toParam = normalizeDateParam(to);
+      if (fromParam) params.set("from", fromParam);
+      if (toParam) params.set("to", toParam);
       const userFilterValue = userFilter.trim();
       if (userFilterValue) {
         if (/^\d+$/.test(userFilterValue)) {
