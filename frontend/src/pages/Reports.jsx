@@ -37,6 +37,10 @@ export default function Reports() {
   const [userFilter, setUserFilter] = useState("");
   const [totals, setTotals] = useState(null);
   const [items, setItems] = useState([]);
+  const [redeemedTotals, setRedeemedTotals] = useState(null);
+  const [redeemedItems, setRedeemedItems] = useState([]);
+  const [showPrizeDetailModal, setShowPrizeDetailModal] = useState(false);
+  const [selectedPrizeDetail, setSelectedPrizeDetail] = useState(null);
   const [showVoidModal, setShowVoidModal] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [voidTargetId, setVoidTargetId] = useState(null);
@@ -75,6 +79,38 @@ export default function Reports() {
     };
   };
 
+  const normalizeRedeemedTotals = (data) => {
+    const totalsPayload = data?.totals;
+    if (!totalsPayload) return null;
+
+    const totalCustomRedeemedPoints =
+      totalsPayload.totalCustomRedeemedPoints ??
+      totalsPayload.total_custom_redeemed_points ??
+      null;
+    const totalPrizeRedemptions =
+      totalsPayload.totalPrizeRedemptions ??
+      totalsPayload.total_prize_redemptions ??
+      null;
+    const usersWithRedemptions =
+      totalsPayload.usersWithRedemptions ??
+      totalsPayload.users_with_redemptions ??
+      null;
+
+    if (
+      totalCustomRedeemedPoints === null &&
+      totalPrizeRedemptions === null &&
+      usersWithRedemptions === null
+    ) {
+      return null;
+    }
+
+    return {
+      totalCustomRedeemedPoints,
+      totalPrizeRedemptions,
+      usersWithRedemptions,
+    };
+  };
+
   const fetchReport = async () => {
     setLoading(true);
     setError("");
@@ -90,11 +126,14 @@ export default function Reports() {
           params.set("userName", userFilterValue);
         }
       }
-      const res = await api.get(
-        `/api/reports/points-loaded?${params.toString()}`
-      );
-      setTotals(normalizeTotals(res.data));
-      setItems(res.data.items || []);
+      const [loadedRes, redeemedRes] = await Promise.all([
+        api.get(`/api/reports/points-loaded?${params.toString()}`),
+        api.get(`/api/reports/points-redeemed-by-user?${params.toString()}`),
+      ]);
+      setTotals(normalizeTotals(loadedRes.data));
+      setItems(loadedRes.data.items || []);
+      setRedeemedTotals(normalizeRedeemedTotals(redeemedRes.data));
+      setRedeemedItems(redeemedRes.data.items || []);
     } catch (e) {
       if (e?.response?.status === 404) {
         setError("Endpoint de reportes no encontrado (404).");
@@ -107,6 +146,8 @@ export default function Reports() {
       }
       setTotals(null);
       setItems([]);
+      setRedeemedTotals(null);
+      setRedeemedItems([]);
     } finally {
       setLoading(false);
     }
@@ -155,6 +196,11 @@ export default function Reports() {
     if (id) {
       navigate(`/customers/${id}`);
     }
+  };
+
+  const openPrizeDetailModal = (row) => {
+    setSelectedPrizeDetail(row);
+    setShowPrizeDetailModal(true);
   };
 
   return (
@@ -304,6 +350,65 @@ export default function Reports() {
             <div className="px-3 py-2 text-sm text-slate-500">Cargando...</div>
           )}
         </div>
+
+        <div className="bg-slate-100 border border-slate-200 rounded px-4 py-3 text-sm grid grid-cols-3 gap-3">
+          <div>
+            <div className="text-xs text-slate-500">Puntos personalizado</div>
+            <div className="text-lg font-bold text-slate-800">
+              {redeemedTotals?.totalCustomRedeemedPoints ?? "-"}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-slate-500">Canjes por premios</div>
+            <div className="text-lg font-bold text-rose-700">
+              {redeemedTotals?.totalPrizeRedemptions ?? "-"}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-slate-500">Usuarios con canjes</div>
+            <div className="text-lg font-bold text-slate-800">
+              {redeemedTotals?.usersWithRedemptions ?? "-"}
+            </div>
+          </div>
+        </div>
+
+        <div className="border border-slate-200 rounded overflow-hidden">
+          <div className="px-3 py-2 bg-slate-200 text-xs font-semibold text-slate-700">
+            Puntos canjeados por usuario
+          </div>
+          <div className="grid grid-cols-3 gap-2 bg-slate-100 text-xs font-semibold text-slate-700 px-3 py-2 border-t border-slate-200">
+            <div>Usuario</div>
+            <div>Puntos personalizado</div>
+            <div>Premios canjeados</div>
+          </div>
+          {redeemedItems.map((row) => (
+            <div
+              key={`${row.userId || "none"}-${row.userName || "none"}`}
+              className="grid grid-cols-3 gap-2 px-3 py-2 text-sm border-t border-slate-200 hover:bg-slate-100"
+            >
+              <div className="text-slate-700">{row.userName || row.userId || "Sin usuario"}</div>
+              <div className="text-slate-700">{row.customRedeemedPoints || 0}</div>
+              <div>
+                {row.prizeRedemptionsCount > 0 ? (
+                  <button
+                    type="button"
+                    className="text-blue-700 underline hover:text-blue-900"
+                    onClick={() => openPrizeDetailModal(row)}
+                  >
+                    {row.prizeRedemptionsCount}
+                  </button>
+                ) : (
+                  <span className="text-slate-700">0</span>
+                )}
+              </div>
+            </div>
+          ))}
+          {!loading && redeemedItems.length === 0 && (
+            <div className="px-3 py-2 text-sm text-slate-500">
+              Sin canjes en el periodo.
+            </div>
+          )}
+        </div>
       </div>
 
       {showVoidModal && (
@@ -330,6 +435,51 @@ export default function Reports() {
               >
                 Anular
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPrizeDetailModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-4 w-full max-w-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-semibold">
+                Detalle de premios canjeados - {selectedPrizeDetail?.userName || selectedPrizeDetail?.userId || "Sin usuario"}
+              </div>
+              <button
+                type="button"
+                className="text-sm text-slate-600 hover:text-slate-800"
+                onClick={() => {
+                  setShowPrizeDetailModal(false);
+                  setSelectedPrizeDetail(null);
+                }}
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="border border-slate-200 rounded overflow-hidden">
+              <div className="grid grid-cols-3 gap-2 bg-slate-100 text-xs font-semibold text-slate-700 px-3 py-2">
+                <div>Premio</div>
+                <div>Cantidad</div>
+                <div>Puntos</div>
+              </div>
+              {(selectedPrizeDetail?.prizeDetails || []).map((detail, idx) => (
+                <div
+                  key={`${detail.prizeName}-${idx}`}
+                  className="grid grid-cols-3 gap-2 px-3 py-2 text-sm border-t border-slate-200"
+                >
+                  <div className="text-slate-700">{detail.prizeName}</div>
+                  <div className="text-slate-700">{detail.redemptionsCount}</div>
+                  <div className="text-rose-700 font-semibold">{detail.redeemedPoints}</div>
+                </div>
+              ))}
+              {(selectedPrizeDetail?.prizeDetails || []).length === 0 && (
+                <div className="px-3 py-2 text-sm text-slate-500">
+                  Sin detalle disponible.
+                </div>
+              )}
             </div>
           </div>
         </div>

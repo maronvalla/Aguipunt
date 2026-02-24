@@ -109,8 +109,8 @@ const userName = req.user?.username ?? null;
         () => {
           const createdAt = getUtcIsoNow();
           db.run(
-            "INSERT INTO transactions (customerid, type, operations, points, note, userid, username, createdat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
-            [customer.id, "REDEEM", null, -puntos, noteValue, userId, userName, createdAt],
+            "INSERT INTO transactions (customerid, type, operations, points, note, userid, username, redeemmode, prizeid, createdat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+            [customer.id, "REDEEM", null, -puntos, noteValue, userId, userName, "CUSTOM", null, createdAt],
             () => {
               res.json({
                 message: "Puntos canjeados correctamente.",

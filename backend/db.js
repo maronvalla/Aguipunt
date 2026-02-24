@@ -52,6 +52,14 @@ const initSchema = async () => {
   `);
 
   await pool.query(`
+    ALTER TABLE transactions
+    ADD COLUMN IF NOT EXISTS redeemmode TEXT;
+
+    ALTER TABLE transactions
+    ADD COLUMN IF NOT EXISTS prizeid INT;
+  `);
+
+  await pool.query(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_unique ON users(username);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_dni_unique ON customers(dni);
     CREATE INDEX IF NOT EXISTS idx_customers_nombre ON customers(nombre);
