@@ -9,8 +9,10 @@ const formatSqlTimestamp = (dt) => dt.toFormat("yyyy-LL-dd HH:mm:ss");
 const buildDailyRange = ({ from, to, timezone } = {}) => {
   const zone = getTimezone(timezone);
   const now = DateTime.now().setZone(zone);
-  const startDate = from ? DateTime.fromISO(from, { zone }) : now;
-  const endDate = to ? DateTime.fromISO(to, { zone }) : startDate;
+  const parsedFrom = from ? DateTime.fromISO(from, { zone }) : null;
+  const parsedTo = to ? DateTime.fromISO(to, { zone }) : null;
+  const startDate = parsedFrom?.isValid ? parsedFrom : now;
+  const endDate = parsedTo?.isValid ? parsedTo : startDate;
 
   const start = startDate.startOf("day");
   const end = endDate.plus({ days: 1 }).startOf("day");
