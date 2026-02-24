@@ -114,6 +114,10 @@ export default function Reports() {
   const fetchReport = async () => {
     setLoading(true);
     setError("");
+    setTotals(null);
+    setItems([]);
+    setRedeemedTotals(null);
+    setRedeemedItems([]);
     try {
       const params = new URLSearchParams();
       if (from) params.set("from", from);
@@ -126,14 +130,36 @@ export default function Reports() {
           params.set("userName", userFilterValue);
         }
       }
-      const [loadedRes, redeemedRes] = await Promise.all([
+      const [loadedRes, redeemedRes] = await Promise.allSettled([
         api.get(`/api/reports/points-loaded?${params.toString()}`),
         api.get(`/api/reports/points-redeemed-by-user?${params.toString()}`),
       ]);
-      setTotals(normalizeTotals(loadedRes.data));
-      setItems(loadedRes.data.items || []);
-      setRedeemedTotals(normalizeRedeemedTotals(redeemedRes.data));
-      setRedeemedItems(redeemedRes.data.items || []);
+
+      if (loadedRes.status === "fulfilled") {
+        setTotals(normalizeTotals(loadedRes.value.data));
+        setItems(loadedRes.value.data.items || []);
+      } else {
+        const e = loadedRes.reason;
+        const loadedMessage =
+          e?.response?.data?.detail ||
+          e?.response?.data?.message ||
+          "Error al cargar reporte de cargas.";
+        setError(loadedMessage);
+      }
+
+      if (redeemedRes.status === "fulfilled") {
+        setRedeemedTotals(normalizeRedeemedTotals(redeemedRes.value.data));
+        setRedeemedItems(redeemedRes.value.data.items || []);
+      } else {
+        const e = redeemedRes.reason;
+        const redeemedMessage =
+          e?.response?.data?.detail ||
+          e?.response?.data?.message ||
+          "Error al cargar reporte de canjes.";
+        setError((prev) =>
+          prev ? `${prev} ${redeemedMessage}` : redeemedMessage
+        );
+      }
     } catch (e) {
       if (e?.response?.status === 404) {
         setError("Endpoint de reportes no encontrado (404).");
@@ -144,10 +170,6 @@ export default function Reports() {
           "Error al cargar reportes.";
         setError(message);
       }
-      setTotals(null);
-      setItems([]);
-      setRedeemedTotals(null);
-      setRedeemedItems([]);
     } finally {
       setLoading(false);
     }

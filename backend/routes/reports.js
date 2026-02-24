@@ -120,47 +120,89 @@ router.get(
     `;
 
     try {
-      const summaryResult = await db.all(
-        `SELECT t.userid AS "userId",
-                t.username AS "userName",
-                COALESCE(SUM(CASE
-                  WHEN t.redeemmode = 'CUSTOM'
-                    OR (t.redeemmode IS NULL AND t.note = 'Canje personalizado')
-                  THEN ABS(t.points)
-                  ELSE 0
-                END), 0)::int AS "customRedeemedPoints",
-                COALESCE(SUM(CASE
-                  WHEN t.redeemmode = 'PRIZE'
-                    OR (t.redeemmode IS NULL AND p_name.id IS NOT NULL)
-                  THEN 1
-                  ELSE 0
-                END), 0)::int AS "prizeRedemptionsCount"
-         FROM transactions t
-         LEFT JOIN prizes p_name ON p_name.nombre = t.note
-         ${baseWhere}
-         GROUP BY t.userid, t.username
-         ORDER BY "customRedeemedPoints" DESC, "prizeRedemptionsCount" DESC, "userName" ASC NULLS LAST`,
-        params
-      );
+      let summaryResult;
+      let detailsResult;
+      try {
+        summaryResult = await db.all(
+          `SELECT t.userid AS "userId",
+                  t.username AS "userName",
+                  COALESCE(SUM(CASE
+                    WHEN t.redeemmode = 'CUSTOM'
+                      OR (t.redeemmode IS NULL AND t.note = 'Canje personalizado')
+                    THEN ABS(t.points)
+                    ELSE 0
+                  END), 0)::int AS "customRedeemedPoints",
+                  COALESCE(SUM(CASE
+                    WHEN t.redeemmode = 'PRIZE'
+                      OR (t.redeemmode IS NULL AND p_name.id IS NOT NULL)
+                    THEN 1
+                    ELSE 0
+                  END), 0)::int AS "prizeRedemptionsCount"
+           FROM transactions t
+           LEFT JOIN prizes p_name ON p_name.nombre = t.note
+           ${baseWhere}
+           GROUP BY t.userid, t.username
+           ORDER BY "customRedeemedPoints" DESC, "prizeRedemptionsCount" DESC, "userName" ASC NULLS LAST`,
+          params
+        );
 
-      const detailsResult = await db.all(
-        `SELECT t.userid AS "userId",
-                t.username AS "userName",
-                COALESCE(p_id.nombre, p_name.nombre, t.note, 'Premio') AS "prizeName",
-                COUNT(1)::int AS "redemptionsCount",
-                COALESCE(SUM(ABS(t.points)), 0)::int AS "redeemedPoints"
-         FROM transactions t
-         LEFT JOIN prizes p_id ON p_id.id = t.prizeid
-         LEFT JOIN prizes p_name ON p_name.nombre = t.note
-         ${baseWhere}
-           AND (
-             t.redeemmode = 'PRIZE'
-             OR (t.redeemmode IS NULL AND p_name.id IS NOT NULL)
-           )
-         GROUP BY t.userid, t.username, COALESCE(p_id.nombre, p_name.nombre, t.note, 'Premio')
-         ORDER BY "redeemedPoints" DESC, "prizeName" ASC`,
-        params
-      );
+        detailsResult = await db.all(
+          `SELECT t.userid AS "userId",
+                  t.username AS "userName",
+                  COALESCE(p_id.nombre, p_name.nombre, t.note, 'Premio') AS "prizeName",
+                  COUNT(1)::int AS "redemptionsCount",
+                  COALESCE(SUM(ABS(t.points)), 0)::int AS "redeemedPoints"
+           FROM transactions t
+           LEFT JOIN prizes p_id ON p_id.id = t.prizeid
+           LEFT JOIN prizes p_name ON p_name.nombre = t.note
+           ${baseWhere}
+             AND (
+               t.redeemmode = 'PRIZE'
+               OR (t.redeemmode IS NULL AND p_name.id IS NOT NULL)
+             )
+           GROUP BY t.userid, t.username, COALESCE(p_id.nombre, p_name.nombre, t.note, 'Premio')
+           ORDER BY "redeemedPoints" DESC, "prizeName" ASC`,
+          params
+        );
+      } catch (queryErr) {
+        // Backward-compatible fallback if new columns are not present yet.
+        summaryResult = await db.all(
+          `SELECT t.userid AS "userId",
+                  t.username AS "userName",
+                  COALESCE(SUM(CASE
+                    WHEN t.note = 'Canje personalizado'
+                    THEN ABS(t.points)
+                    ELSE 0
+                  END), 0)::int AS "customRedeemedPoints",
+                  COALESCE(SUM(CASE
+                    WHEN p_name.id IS NOT NULL
+                    THEN 1
+                    ELSE 0
+                  END), 0)::int AS "prizeRedemptionsCount"
+           FROM transactions t
+           LEFT JOIN prizes p_name ON p_name.nombre = t.note
+           ${baseWhere}
+           GROUP BY t.userid, t.username
+           ORDER BY "customRedeemedPoints" DESC, "prizeRedemptionsCount" DESC, "userName" ASC NULLS LAST`,
+          params
+        );
+
+        detailsResult = await db.all(
+          `SELECT t.userid AS "userId",
+                  t.username AS "userName",
+                  COALESCE(p_name.nombre, t.note, 'Premio') AS "prizeName",
+                  COUNT(1)::int AS "redemptionsCount",
+                  COALESCE(SUM(ABS(t.points)), 0)::int AS "redeemedPoints"
+           FROM transactions t
+           LEFT JOIN prizes p_name ON p_name.nombre = t.note
+           ${baseWhere}
+             AND p_name.id IS NOT NULL
+           GROUP BY t.userid, t.username, COALESCE(p_name.nombre, t.note, 'Premio')
+           ORDER BY "redeemedPoints" DESC, "prizeName" ASC`,
+          params
+        );
+        console.warn("[reports] redeem report fallback mode enabled", queryErr?.message);
+      }
 
       const prizeDetailsMap = new Map();
       for (const row of detailsResult?.rows || []) {
