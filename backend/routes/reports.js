@@ -99,7 +99,7 @@ router.get(
       });
     }
 
-    const { range } = buildDailyRange({ from, to });
+    const range = buildDailyRange({ from, to });
     const params = [range.startSql, range.endSql];
     let userFilterSql = "";
 
