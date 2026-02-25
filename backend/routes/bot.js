@@ -98,11 +98,18 @@ const sendDailySummaryInternal = async () => {
   }
 
   const summary = await buildDailySummary();
+  const customRedeemLines = (summary.customRedeemedByUser || []).map((item) => {
+    const label = item.userName || (item.userId ? `ID ${item.userId}` : "Sin usuario");
+    return `- ${label}: ${item.redeemedPoints} pts`;
+  });
 
   const message = [
-    `📊 Aguipuntos — Resumen (${summary.formattedDate})`,
-    `✅ Puntos cargados hoy: ${summary.totalPoints}`,
-    `🏆 Usuario que más cargó: ${summary.topUserName} (${summary.topUserPoints} pts)`,
+    `Aguipuntos - Resumen (${summary.formattedDate})`,
+    `Puntos cargados hoy: ${summary.totalPoints}`,
+    `Usuario que mas cargo: ${summary.topUserName} (${summary.topUserPoints} pts)`,
+    customRedeemLines.length
+      ? `Canjes personalizados hoy:\n${customRedeemLines.join("\n")}`
+      : "Canjes personalizados hoy: sin canjes.",
   ].join("\n");
 
   for (const chatId of uniqueRecipients) {
@@ -166,3 +173,4 @@ module.exports = {
   router,
   sendDailySummaryInternal,
 };
+

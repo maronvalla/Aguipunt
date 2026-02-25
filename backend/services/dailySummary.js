@@ -21,10 +21,35 @@ const buildDailySummary = async (options = {}) => {
     params
   );
 
+  const customRedeemRowsResult = await db.all(
+    `SELECT t.userid AS "userId",
+            t.username AS "userName",
+            COALESCE(SUM(ABS(t.points)), 0)::int AS "redeemedPoints"
+     FROM transactions t
+     WHERE t.type = 'REDEEM'
+       AND t.voidedat IS NULL
+       AND t.createdat >= $1
+       AND t.createdat < $2
+       AND (
+         t.redeemmode = 'CUSTOM'
+         OR (t.redeemmode IS NULL AND t.note = 'Canje personalizado')
+       )
+     GROUP BY t.userid, t.username
+     ORDER BY "redeemedPoints" DESC, "userName" ASC NULLS LAST`,
+    [range.startSql, range.endSql]
+  );
+
+  const customRedeemedByUser = (customRedeemRowsResult?.rows || []).map((row) => ({
+    userId: row.userId ?? null,
+    userName: row.userName || null,
+    redeemedPoints: Number(row.redeemedPoints || 0),
+  }));
+
   return {
     totalPoints: Number(totals.totalPointsLoaded || 0),
     topUserName: topRow?.username || "Sin registros",
     topUserPoints: Number(topRow?.total_points || 0),
+    customRedeemedByUser,
     formattedDate: range.formattedDate,
     range,
   };
