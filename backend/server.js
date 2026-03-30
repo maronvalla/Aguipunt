@@ -142,26 +142,30 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ message: "Internal server error" });
 });
 
+module.exports = app;
+
 /* =======================
    Start
 ======================= */
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Backend listening on port ${PORT}`);
+if (require.main === module && !process.env.VERCEL) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Backend listening on port ${PORT}`);
 
-  const shouldStartTelegramBot = Boolean(process.env.TELEGRAM_BOT_TOKEN);
-  const dailySummaryEnabled = isDailySummaryEnabled();
+    const shouldStartTelegramBot = Boolean(process.env.TELEGRAM_BOT_TOKEN);
+    const dailySummaryEnabled = isDailySummaryEnabled();
 
-  if (shouldStartTelegramBot && dailySummaryEnabled) {
-    console.log(`${BOT_LOG_PREFIX} daily scheduler enabled.`);
-    scheduleDailySummary();
-  } else if (!shouldStartTelegramBot) {
-    console.log(
-      `${BOT_LOG_PREFIX} daily scheduler disabled. Missing TELEGRAM_BOT_TOKEN.`
-    );
-  } else {
-    console.log(
-      `${BOT_LOG_PREFIX} daily scheduler disabled. ${DAILY_SUMMARY_ENABLED_ENV} is not true.`
-    );
-  }
-});
+    if (shouldStartTelegramBot && dailySummaryEnabled) {
+      console.log(`${BOT_LOG_PREFIX} daily scheduler enabled.`);
+      scheduleDailySummary();
+    } else if (!shouldStartTelegramBot) {
+      console.log(
+        `${BOT_LOG_PREFIX} daily scheduler disabled. Missing TELEGRAM_BOT_TOKEN.`
+      );
+    } else {
+      console.log(
+        `${BOT_LOG_PREFIX} daily scheduler disabled. ${DAILY_SUMMARY_ENABLED_ENV} is not true.`
+      );
+    }
+  });
+}
