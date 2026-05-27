@@ -11,6 +11,7 @@ const { router: botRoutes, sendDailySummaryInternal } = require("./routes/bot");
 const customersRoutes = require("./routes/customers");
 const pointsRoutes = require("./routes/points");
 const prizesRoutes = require("./routes/prizes");
+const predictionsRoutes = require("./routes/predictions");
 const reportsRoutes = require("./routes/reports");
 const usersRoutes = require("./routes/users");
 
@@ -116,6 +117,7 @@ app.use("/api", requireAuth);
 app.use("/api/customers", customersRoutes);
 app.use("/api/points", pointsRoutes);
 app.use("/api/prizes", prizesRoutes);
+app.use("/api/predictions", predictionsRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/users", usersRoutes);
 

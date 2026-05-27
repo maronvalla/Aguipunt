@@ -1,0 +1,127 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password_hash": "$2a$10$eDTED4clXe2ovTjJOMaoA.80bjF1Rf4g6Pfd2QVzVjUNmQnosjKoS",
+      "role": "admin"
+    },
+    {
+      "id": 2,
+      "username": "cajero",
+      "password_hash": "$2a$10$AokgLIGumDJvP8CY3/vXt.O1ogoXf6KumqsvTZgNr898eG3ig.ONW",
+      "role": "cashier"
+    }
+  ],
+  "customers": [
+    {
+      "id": 1,
+      "dni": "43566609",
+      "nombre": "exequiel",
+      "celular": null,
+      "puntos": 0
+    }
+  ],
+  "prizes": [],
+  "transactions": [],
+  "predictions": [
+    {
+      "id": 1,
+      "customerid": 1,
+      "customer_name_snapshot": "exequiel",
+      "customer_dni_snapshot": "43566609",
+      "match_key": "argentina-vs-jordania-2026-06-27",
+      "match_label": "Argentina vs Jordania",
+      "match_date": "2026-06-27",
+      "predicted_outcome": "ARG",
+      "argentina_goals": 2,
+      "jordania_goals": 0,
+      "createdat": "2026-05-27T02:24:34.761Z",
+      "userid": 1,
+      "username": "admin"
+    },
+    {
+      "id": 2,
+      "customerid": 1,
+      "customer_name_snapshot": "exequiel",
+      "customer_dni_snapshot": "43566609",
+      "match_key": "argentina-vs-jordania-2026-06-27",
+      "match_label": "Argentina vs Jordania",
+      "match_date": "2026-06-27",
+      "predicted_outcome": "ARG",
+      "argentina_goals": 2,
+      "jordania_goals": 0,
+      "createdat": "2026-05-27T02:27:41.461Z",
+      "userid": 1,
+      "username": "admin"
+    },
+    {
+      "id": 3,
+      "customerid": 1,
+      "customer_name_snapshot": "exequiel",
+      "customer_dni_snapshot": "43566609",
+      "match_key": "argentina-vs-jordania-2026-06-27",
+      "match_label": "Argentina vs Jordania",
+      "match_date": "2026-06-27",
+      "predicted_outcome": "ARG",
+      "argentina_goals": 2,
+      "jordania_goals": 1,
+      "createdat": "2026-05-27T02:31:27.183Z",
+      "userid": 1,
+      "username": "admin"
+    },
+    {
+      "id": 4,
+      "customerid": 1,
+      "customer_name_snapshot": "exequiel",
+      "customer_dni_snapshot": "43566609",
+      "match_key": "argentina-vs-jordania-2026-06-27",
+      "match_label": "Argentina vs Jordania",
+      "match_date": "2026-06-27",
+      "predicted_outcome": "ARG",
+      "argentina_goals": 2,
+      "jordania_goals": 0,
+      "createdat": "2026-05-27T02:35:14.736Z",
+      "userid": 1,
+      "username": "admin"
+    },
+    {
+      "id": 5,
+      "customerid": 1,
+      "customer_name_snapshot": "exequiel",
+      "customer_dni_snapshot": "43566609",
+      "match_key": "argentina-vs-jordania-2026-06-27",
+      "match_label": "Argentina vs Jordania",
+      "match_date": "2026-06-27",
+      "predicted_outcome": "ARG",
+      "argentina_goals": 2,
+      "jordania_goals": 1,
+      "createdat": "2026-05-27T02:42:08.229Z",
+      "userid": 1,
+      "username": "admin"
+    },
+    {
+      "id": 6,
+      "customerid": 1,
+      "customer_name_snapshot": "exequiel",
+      "customer_dni_snapshot": "43566609",
+      "match_key": "argentina-vs-jordania-2026-06-27",
+      "match_label": "Argentina vs Jordania",
+      "match_date": "2026-06-27",
+      "predicted_outcome": "ARG",
+      "argentina_goals": 2,
+      "jordania_goals": 0,
+      "createdat": "2026-05-27T03:17:54.351Z",
+      "userid": 1,
+      "username": "admin"
+    }
+  ],
+  "settings": [],
+  "counters": {
+    "users": 2,
+    "customers": 1,
+    "prizes": 0,
+    "transactions": 0,
+    "predictions": 6
+  }
+}

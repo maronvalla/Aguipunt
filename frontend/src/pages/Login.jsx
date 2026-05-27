@@ -15,8 +15,12 @@ export default function Login() {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.role || "admin");
       window.location.href = "/menu";
-    } catch {
-      alert("Credenciales incorrectas");
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Error al iniciar sesion";
+      alert(message);
     }
   };
 
