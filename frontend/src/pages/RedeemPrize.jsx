@@ -75,7 +75,19 @@ export default function RedeemPrize() {
     }
   };
 
-  const openReceiptPrint = ({ name, dniValue, points, remainingPoints }) => {
+  const openPrintWindow = () => {
+    const printWindow = window.open("", "_blank", "width=380,height=600");
+    if (!printWindow) return null;
+    printWindow.document.write(`<!DOCTYPE html>
+      <html>
+        <head><meta charset="UTF-8" /><title>Preparando recibo</title></head>
+        <body style="font-family: Arial, sans-serif; padding: 16px;">Preparando recibo...</body>
+      </html>`);
+    printWindow.document.close();
+    return printWindow;
+  };
+
+  const openReceiptPrint = ({ name, dniValue, points, remainingPoints, printWindow }) => {
     const safeName = name || "Sin nombre";
     const safeDni = dniValue || "Sin DNI";
     const safePoints = Number.isFinite(Number(points)) ? Number(points) : 0;
@@ -131,21 +143,20 @@ export default function RedeemPrize() {
           ${receiptHtml("Copia cliente")}
           <div class="spacer"></div>
           ${receiptHtml("Copia comercio")}
-          <script>
-            window.onload = () => {
-              window.print();
-              window.close();
-            };
-          </script>
         </body>
       </html>
     `;
 
-    const printWindow = window.open("", "print-receipt", "width=380,height=600");
-    if (!printWindow) return;
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+    const targetWindow = printWindow || openPrintWindow();
+    if (!targetWindow) return false;
+    targetWindow.document.open();
+    targetWindow.document.write(html);
+    targetWindow.document.close();
+    targetWindow.focus();
+    window.setTimeout(() => {
+      targetWindow.print();
+    }, 250);
+    return true;
   };
 
   const getPrizePoints = () => {
@@ -170,7 +181,7 @@ export default function RedeemPrize() {
     fetchPrizes();
   }, []);
 
-  const submitPrize = async () => {
+  const submitPrize = async (receiptWindow) => {
     setError("");
     setMessage("");
     try {
@@ -186,9 +197,11 @@ export default function RedeemPrize() {
         dniValue: dni,
         points: getPrizePoints(),
         remainingPoints: res.data.newPoints,
+        printWindow: receiptWindow,
       });
       fetchTransactions(customerId);
     } catch (e) {
+      receiptWindow?.close();
       const data = e?.response?.data;
       if (data?.currentPoints !== undefined) {
         setCurrentPoints(data.currentPoints);
@@ -197,13 +210,14 @@ export default function RedeemPrize() {
     }
   };
 
-  const submitCustom = async () => {
+  const submitCustom = async (receiptWindow) => {
     setError("");
     setMessage("");
     try {
+      const pointsToRedeem = Number(customPoints);
       const res = await api.post("/api/points/points/redeem-custom", {
         dni,
-        pointsToRedeem: Number(customPoints),
+        pointsToRedeem,
         note: customNote,
       });
       setCurrentPoints(res.data.newPoints);
@@ -214,11 +228,13 @@ export default function RedeemPrize() {
       openReceiptPrint({
         name: nameForReceipt,
         dniValue: dni,
-        points: Number(customPoints),
+        points: pointsToRedeem,
         remainingPoints: res.data.newPoints,
+        printWindow: receiptWindow,
       });
       fetchTransactions(customerId);
     } catch (e) {
+      receiptWindow?.close();
       const data = e?.response?.data;
       if (data?.currentPoints !== undefined) {
         setCurrentPoints(data.currentPoints);
@@ -227,14 +243,15 @@ export default function RedeemPrize() {
     }
   };
 
-  const submit = async () => {
-    if (mode === "prize") return submitPrize();
-    return submitCustom();
+  const submit = async (receiptWindow) => {
+    if (mode === "prize") return submitPrize(receiptWindow);
+    return submitCustom(receiptWindow);
   };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    submit();
+    const receiptWindow = openPrintWindow();
+    submit(receiptWindow);
   };
 
   const handleDniKeyDown = (e) => {

@@ -83,23 +83,22 @@ const openPredictionReceiptPrint = ({
           <div class="result">¡Gracias por tu visita!</div>
           <div class="subtitle">Avenida Mitre 577 - Aguilares</div>
         </div>
-        <script>
-          window.onload = () => {
-            window.print();
-            window.close();
-          };
-        </script>
       </body>
     </html>
   `;
 
   const targetWindow =
     printWindow ||
-    window.open("", "print-prediction-receipt", "width=320,height=520");
-  if (!targetWindow) return;
+    window.open("", "_blank", "width=320,height=520");
+  if (!targetWindow) return false;
   targetWindow.document.open();
   targetWindow.document.write(html);
   targetWindow.document.close();
+  targetWindow.focus();
+  window.setTimeout(() => {
+    targetWindow.print();
+  }, 250);
+  return true;
 };
 
 const FlagIcon = ({ kind }) => {
@@ -298,8 +297,16 @@ export default function LoadPoints() {
       operations: operacionesNumber,
     };
     const receiptWindow = pendingPrediction
-      ? window.open("", "print-prediction-receipt", "width=320,height=520")
+      ? window.open("", "_blank", "width=320,height=520")
       : null;
+    if (receiptWindow) {
+      receiptWindow.document.write(`<!DOCTYPE html>
+        <html>
+          <head><meta charset="UTF-8" /><title>Preparando recibo</title></head>
+          <body style="font-family: Arial, sans-serif; padding: 16px;">Preparando recibo...</body>
+        </html>`);
+      receiptWindow.document.close();
+    }
     try {
       const res = await api.post("/api/points/points/load", body);
       let predictionSaved = false;
