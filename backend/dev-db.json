@@ -3,7 +3,7 @@
     {
       "id": 1,
       "username": "admin",
-      "password_hash": "$2a$10$eDTED4clXe2ovTjJOMaoA.80bjF1Rf4g6Pfd2QVzVjUNmQnosjKoS",
+      "password_hash": "$2a$10$siSoNsxxJAfxoSraGEu0t.M5txbRdkpsTOeyuZYcjSuAWAIpNlwxC",
       "role": "admin"
     },
     {
@@ -20,10 +20,93 @@
       "nombre": "exequiel",
       "celular": null,
       "puntos": 0
+    },
+    {
+      "id": 2,
+      "dni": "45455444",
+      "nombre": "exequiel",
+      "celular": "1",
+      "puntos": 0
+    },
+    {
+      "id": 3,
+      "dni": "43566607",
+      "nombre": "exeq",
+      "celular": "1",
+      "puntos": 250
     }
   ],
   "prizes": [],
-  "transactions": [],
+  "transactions": [
+    {
+      "id": 1,
+      "customerid": 3,
+      "type": "LOAD",
+      "operations": 2,
+      "points": 100,
+      "note": null,
+      "userid": 2,
+      "username": "cajero",
+      "redeemmode": "2026-05-27T05:47:47.807Z",
+      "prizeid": null,
+      "originaltransactionid": null,
+      "createdat": "2026-05-27T05:47:47.807Z",
+      "voidedat": null,
+      "voidedbyuserid": null,
+      "voidreason": null
+    },
+    {
+      "id": 2,
+      "customerid": 3,
+      "type": "LOAD",
+      "operations": 1,
+      "points": 50,
+      "note": null,
+      "userid": 2,
+      "username": "cajero",
+      "redeemmode": "2026-05-27T05:53:53.933Z",
+      "prizeid": null,
+      "originaltransactionid": null,
+      "createdat": "2026-05-27T05:53:53.933Z",
+      "voidedat": null,
+      "voidedbyuserid": null,
+      "voidreason": null
+    },
+    {
+      "id": 3,
+      "customerid": 3,
+      "type": "LOAD",
+      "operations": 1,
+      "points": 50,
+      "note": null,
+      "userid": 2,
+      "username": "cajero",
+      "redeemmode": "2026-05-27T05:54:05.592Z",
+      "prizeid": null,
+      "originaltransactionid": null,
+      "createdat": "2026-05-27T05:54:05.592Z",
+      "voidedat": null,
+      "voidedbyuserid": null,
+      "voidreason": null
+    },
+    {
+      "id": 4,
+      "customerid": 3,
+      "type": "LOAD",
+      "operations": 1,
+      "points": 50,
+      "note": null,
+      "userid": 2,
+      "username": "cajero",
+      "redeemmode": "2026-05-27T05:54:59.528Z",
+      "prizeid": null,
+      "originaltransactionid": null,
+      "createdat": "2026-05-27T05:54:59.528Z",
+      "voidedat": null,
+      "voidedbyuserid": null,
+      "voidreason": null
+    }
+  ],
   "predictions": [
     {
       "id": 1,
@@ -114,14 +197,29 @@
       "createdat": "2026-05-27T03:17:54.351Z",
       "userid": 1,
       "username": "admin"
+    },
+    {
+      "id": 7,
+      "customerid": 3,
+      "customer_name_snapshot": "exeq",
+      "customer_dni_snapshot": "43566607",
+      "match_key": "argentina-vs-jordania-2026-06-27",
+      "match_label": "Argentina vs Jordania",
+      "match_date": "2026-06-27",
+      "predicted_outcome": "ARG",
+      "argentina_goals": 2,
+      "jordania_goals": 0,
+      "createdat": "2026-05-27T05:54:59.673Z",
+      "userid": 2,
+      "username": "cajero"
     }
   ],
   "settings": [],
   "counters": {
     "users": 2,
-    "customers": 1,
+    "customers": 3,
     "prizes": 0,
-    "transactions": 0,
-    "predictions": 6
+    "transactions": 4,
+    "predictions": 7
   }
 }

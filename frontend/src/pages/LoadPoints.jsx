@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../api/axios";
 
 const POINTS_PER_OPERATION = 50;
@@ -127,7 +128,8 @@ const FlagIcon = ({ kind }) => {
 };
 
 export default function LoadPoints() {
-  const [dni, setDni] = useState("");
+  const [searchParams] = useSearchParams();
+  const [dni, setDni] = useState(() => searchParams.get("dni") || "");
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [operaciones, setOperaciones] = useState("");
   const [currentPoints, setCurrentPoints] = useState(null);
@@ -232,6 +234,13 @@ export default function LoadPoints() {
   };
 
   useEffect(() => {
+    const dniFromQuery = searchParams.get("dni") || "";
+    if (dniFromQuery && dniFromQuery !== dni) {
+      setDni(dniFromQuery);
+    }
+  }, [searchParams, dni]);
+
+  useEffect(() => {
     if (lookupTimeoutRef.current) {
       clearTimeout(lookupTimeoutRef.current);
     }
@@ -297,6 +306,13 @@ export default function LoadPoints() {
             jordaniaGoals: pendingPrediction.jordaniaGoals,
           });
           predictionSaved = true;
+          openPredictionReceiptPrint({
+            customerName: customer?.nombre,
+            resultLabel: formatOutcomeLabel(pendingPrediction.predictedOutcome),
+            argentinaGoals: pendingPrediction.argentinaGoals,
+            jordaniaGoals: pendingPrediction.jordaniaGoals,
+            currentPoints: res.data.newPoints,
+          });
         } catch (predictionSaveError) {
           setError(
             predictionSaveError?.response?.data?.message ||
@@ -354,13 +370,6 @@ export default function LoadPoints() {
     setSavingPrediction(true);
     setPredictionError("");
     try {
-      openPredictionReceiptPrint({
-        customerName: customer?.nombre,
-        resultLabel: formatOutcomeLabel(predictedOutcome),
-        argentinaGoals: argentina,
-        jordaniaGoals: jordania,
-        currentPoints: currentPoints ?? customer?.puntos ?? 0,
-      });
       setPendingPrediction({
         customerId: selectedCustomerId,
         predictedOutcome,
@@ -368,7 +377,7 @@ export default function LoadPoints() {
         jordaniaGoals: jordania,
       });
       setPredictionSuccess(
-        "Pronostico listo. Se guardara cuando completes la carga de puntos."
+        "Pronostico listo. Se guardara e imprimira cuando completes la carga de puntos."
       );
       setShowPredictionModal(false);
       resetPredictionForm();
@@ -383,13 +392,8 @@ export default function LoadPoints() {
 
   const handleReprintPrediction = () => {
     if (!hasPendingPredictionForCustomer) return;
-    openPredictionReceiptPrint({
-      customerName: customer?.nombre,
-      resultLabel: formatOutcomeLabel(pendingPrediction.predictedOutcome),
-      argentinaGoals: pendingPrediction.argentinaGoals,
-      jordaniaGoals: pendingPrediction.jordaniaGoals,
-      currentPoints: currentPoints ?? customer?.puntos ?? 0,
-    });
+    setPredictionError("");
+    setShowPredictionModal(false);
   };
 
   const formatType = (type) => (type === "REDEEM" ? "Canje" : "Carga");
@@ -472,19 +476,6 @@ export default function LoadPoints() {
           {message && (
             <div className="text-sm text-green-700 bg-green-50 border border-green-100 rounded p-2">
               {message}
-            </div>
-          )}
-
-          {predictionSuccess && (
-            <div className="text-sm text-green-700 bg-green-50 border border-green-100 rounded p-2">
-              {predictionSuccess}
-            </div>
-          )}
-
-          {pendingPrediction && (
-            <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded p-2">
-              Pronostico pendiente: {formatOutcomeLabel(pendingPrediction.predictedOutcome)}.
-              Se guardara al cargar los puntos.
             </div>
           )}
 
@@ -593,7 +584,7 @@ export default function LoadPoints() {
 
             {isCashierPredictionLocked && (
               <div className="rounded border border-amber-200 bg-amber-50 p-2 text-sm text-amber-800">
-                Este pronostico ya fue guardado para este cliente. Como cajero solo podés reimprimirlo hasta completar la carga de puntos.
+                Este pronostico ya fue guardado para este cliente. Como cajero no podés editarlo y el recibo se imprimirá al completar la carga de puntos.
               </div>
             )}
 
@@ -660,7 +651,7 @@ export default function LoadPoints() {
                   className="px-3 py-1 rounded bg-blue-500 hover:bg-blue-600 text-white"
                   onClick={handleReprintPrediction}
                 >
-                  Reimprimir
+                  Entendido
                 </button>
               ) : (
                 <button

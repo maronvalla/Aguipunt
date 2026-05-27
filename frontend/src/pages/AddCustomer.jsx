@@ -1,30 +1,43 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
 export default function AddCustomer() {
+  const navigate = useNavigate();
   const [numeroDNI, setNumeroDNI] = useState("");
   const [nombreYApellido, setNombreYApellido] = useState("");
   const [numeroCelular, setNumeroCelular] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [lastCreatedDni, setLastCreatedDni] = useState("");
 
   const submit = async () => {
     try {
+      setErrorMessage("");
       const res = await api.post("/api/customers/customers", {
         numeroDNI,
         nombreYApellido,
         numeroCelular,
       });
-      alert(res.data.message);
+      setSuccessMessage(res.data.message || "Cliente agregado correctamente.");
+      setLastCreatedDni(numeroDNI);
       setNumeroDNI("");
       setNombreYApellido("");
       setNumeroCelular("");
     } catch (e) {
-      alert(e?.response?.data?.message || "Error al agregar cliente.");
+      setSuccessMessage("");
+      setErrorMessage(e?.response?.data?.message || "Error al agregar cliente.");
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     submit();
+  };
+
+  const goToLoadPoints = () => {
+    if (!lastCreatedDni) return;
+    navigate(`/load?dni=${encodeURIComponent(lastCreatedDni)}`);
   };
 
   return (
@@ -59,6 +72,28 @@ export default function AddCustomer() {
             Guardar
           </button>
         </form>
+
+        {successMessage && (
+          <div className="space-y-3 rounded-lg border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-blue-50 p-4 text-sm text-emerald-900 shadow-sm">
+            <div className="font-semibold">{successMessage}</div>
+            <div className="text-xs uppercase tracking-wide text-emerald-700">
+              Siguiente paso recomendado
+            </div>
+            <button
+              type="button"
+              className="w-full rounded-lg bg-emerald-600 px-4 py-3 text-base font-semibold text-white shadow-md transition hover:bg-emerald-700"
+              onClick={goToLoadPoints}
+            >
+              Ir a cargar puntos ahora
+            </button>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="rounded border border-red-100 bg-red-50 p-3 text-sm text-red-700">
+            {errorMessage}
+          </div>
+        )}
 
         <a className="block text-center text-blue-700 hover:underline" href="/menu">
           Volver
