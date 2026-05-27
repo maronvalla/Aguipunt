@@ -10,6 +10,7 @@ export default function RedeemPrize() {
   const [txError, setTxError] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [receiptToPrint, setReceiptToPrint] = useState(null);
 
   const [mode, setMode] = useState("prize");
   const [prizes, setPrizes] = useState([]);
@@ -181,9 +182,10 @@ export default function RedeemPrize() {
     fetchPrizes();
   }, []);
 
-  const submitPrize = async (receiptWindow) => {
+  const submitPrize = async () => {
     setError("");
     setMessage("");
+    setReceiptToPrint(null);
     try {
       const res = await api.post("/api/prizes/prizes/redeem", {
         dni,
@@ -192,16 +194,14 @@ export default function RedeemPrize() {
       setCurrentPoints(res.data.newPoints);
       setMessage(`Te quedan: ${res.data.newPoints} puntos.`);
       const nameForReceipt = await resolveReceiptName(dni);
-      openReceiptPrint({
+      setReceiptToPrint({
         name: nameForReceipt,
         dniValue: dni,
         points: getPrizePoints(),
         remainingPoints: res.data.newPoints,
-        printWindow: receiptWindow,
       });
       fetchTransactions(customerId);
     } catch (e) {
-      receiptWindow?.close();
       const data = e?.response?.data;
       if (data?.currentPoints !== undefined) {
         setCurrentPoints(data.currentPoints);
@@ -210,9 +210,10 @@ export default function RedeemPrize() {
     }
   };
 
-  const submitCustom = async (receiptWindow) => {
+  const submitCustom = async () => {
     setError("");
     setMessage("");
+    setReceiptToPrint(null);
     try {
       const pointsToRedeem = Number(customPoints);
       const res = await api.post("/api/points/points/redeem-custom", {
@@ -225,16 +226,14 @@ export default function RedeemPrize() {
       setCustomPoints("");
       setCustomNote("");
       const nameForReceipt = await resolveReceiptName(dni);
-      openReceiptPrint({
+      setReceiptToPrint({
         name: nameForReceipt,
         dniValue: dni,
         points: pointsToRedeem,
         remainingPoints: res.data.newPoints,
-        printWindow: receiptWindow,
       });
       fetchTransactions(customerId);
     } catch (e) {
-      receiptWindow?.close();
       const data = e?.response?.data;
       if (data?.currentPoints !== undefined) {
         setCurrentPoints(data.currentPoints);
@@ -243,15 +242,19 @@ export default function RedeemPrize() {
     }
   };
 
-  const submit = async (receiptWindow) => {
-    if (mode === "prize") return submitPrize(receiptWindow);
-    return submitCustom(receiptWindow);
+  const submit = async () => {
+    if (mode === "prize") return submitPrize();
+    return submitCustom();
   };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    const receiptWindow = openPrintWindow();
-    submit(receiptWindow);
+    submit();
+  };
+
+  const handlePrintReceipt = () => {
+    if (!receiptToPrint) return;
+    openReceiptPrint(receiptToPrint);
   };
 
   const handleDniKeyDown = (e) => {
@@ -428,6 +431,16 @@ export default function RedeemPrize() {
             <div className="text-sm text-green-700 bg-green-50 border border-green-100 rounded p-2">
               {message}
             </div>
+          )}
+
+          {receiptToPrint && (
+            <button
+              type="button"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white w-full p-2 rounded"
+              onClick={handlePrintReceipt}
+            >
+              Imprimir recibo
+            </button>
           )}
 
           {error && (

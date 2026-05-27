@@ -148,6 +148,7 @@ export default function LoadPoints() {
   const [pendingPrediction, setPendingPrediction] = useState(null);
   const [predictionError, setPredictionError] = useState("");
   const [predictionSuccess, setPredictionSuccess] = useState("");
+  const [predictionReceiptToPrint, setPredictionReceiptToPrint] = useState(null);
   const [savingPrediction, setSavingPrediction] = useState(false);
   const lookupTimeoutRef = useRef(null);
 
@@ -256,6 +257,7 @@ export default function LoadPoints() {
     setTransactions([]);
     setPendingPrediction(null);
     setPredictionSuccess("");
+    setPredictionReceiptToPrint(null);
     if (!trimmedDni || trimmedDni.length < 7) {
       setLoadingLookup(false);
       return;
@@ -283,6 +285,7 @@ export default function LoadPoints() {
   const handleSubmit = async () => {
     setError("");
     setMessage("");
+    setPredictionReceiptToPrint(null);
     if (!isCustomerLoaded) {
       setError("Primero buscá y cargá el cliente.");
       return;
@@ -296,17 +299,6 @@ export default function LoadPoints() {
       puntosAgregados: Number(pointsCalculated),
       operations: operacionesNumber,
     };
-    const receiptWindow = pendingPrediction
-      ? window.open("", "_blank", "width=320,height=520")
-      : null;
-    if (receiptWindow) {
-      receiptWindow.document.write(`<!DOCTYPE html>
-        <html>
-          <head><meta charset="UTF-8" /><title>Preparando recibo</title></head>
-          <body style="font-family: Arial, sans-serif; padding: 16px;">Preparando recibo...</body>
-        </html>`);
-      receiptWindow.document.close();
-    }
     try {
       const res = await api.post("/api/points/points/load", body);
       let predictionSaved = false;
@@ -319,16 +311,14 @@ export default function LoadPoints() {
             jordaniaGoals: pendingPrediction.jordaniaGoals,
           });
           predictionSaved = true;
-          openPredictionReceiptPrint({
+          setPredictionReceiptToPrint({
             customerName: customer?.nombre,
             resultLabel: formatOutcomeLabel(pendingPrediction.predictedOutcome),
             argentinaGoals: pendingPrediction.argentinaGoals,
             jordaniaGoals: pendingPrediction.jordaniaGoals,
             currentPoints: res.data.newPoints,
-            printWindow: receiptWindow,
           });
         } catch (predictionSaveError) {
-          receiptWindow?.close();
           setError(
             predictionSaveError?.response?.data?.message ||
               "Los puntos se cargaron, pero no se pudo guardar el pronostico."
@@ -349,7 +339,6 @@ export default function LoadPoints() {
       }
       fetchTransactions(selectedCustomerId);
     } catch (e) {
-      receiptWindow?.close();
       const data = e?.response?.data;
       setError(data?.error || data?.message || "Error al cargar puntos");
     }
@@ -410,6 +399,11 @@ export default function LoadPoints() {
     if (!hasPendingPredictionForCustomer) return;
     setPredictionError("");
     setShowPredictionModal(false);
+  };
+
+  const handlePrintPredictionReceipt = () => {
+    if (!predictionReceiptToPrint) return;
+    openPredictionReceiptPrint(predictionReceiptToPrint);
   };
 
   const formatType = (type) => (type === "REDEEM" ? "Canje" : "Carga");
@@ -493,6 +487,16 @@ export default function LoadPoints() {
             <div className="text-sm text-green-700 bg-green-50 border border-green-100 rounded p-2">
               {message}
             </div>
+          )}
+
+          {predictionReceiptToPrint && (
+            <button
+              type="button"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white w-full p-2 rounded"
+              onClick={handlePrintPredictionReceipt}
+            >
+              Imprimir recibo
+            </button>
           )}
 
           {error && (
