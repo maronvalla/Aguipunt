@@ -36,7 +36,6 @@ const openPredictionReceiptPrint = ({
   argentinaGoals,
   jordaniaGoals,
   currentPoints,
-  printWindow,
 }) => {
   const safeCustomerName = customerName || "Sin nombre";
   const safeResultLabel = resultLabel || "Sin resultado";
@@ -54,9 +53,11 @@ const openPredictionReceiptPrint = ({
         <meta charset="UTF-8" />
         <title>Recibo Pronostico</title>
         <style>
-          @page { size: 58mm auto; margin: 0; }
-          body { font-family: Arial, sans-serif; margin: 0; }
-          .receipt { width: 50mm; padding: 4mm 3mm; }
+          @page { size: 80mm auto; margin: 0; }
+          * { box-sizing: border-box; }
+          html, body { width: 80mm; margin: 0; padding: 0; background: #fff; }
+          body { font-family: Arial, sans-serif; }
+          .receipt { width: 100%; padding: 6mm 4mm; }
           .title { font-size: 13px; font-weight: bold; text-align: center; margin-bottom: 6px; }
           .subtitle { font-size: 10px; text-align: center; margin-bottom: 8px; }
           .row { font-size: 11px; margin: 4px 0; }
@@ -87,17 +88,33 @@ const openPredictionReceiptPrint = ({
     </html>
   `;
 
-  const targetWindow =
-    printWindow ||
-    window.open("", "_blank", "width=320,height=520");
-  if (!targetWindow) return false;
-  targetWindow.document.open();
-  targetWindow.document.write(html);
-  targetWindow.document.close();
-  targetWindow.focus();
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+
+  const frameWindow = iframe.contentWindow;
+  if (!frameWindow) {
+    iframe.remove();
+    return false;
+  }
+
+  frameWindow.document.open();
+  frameWindow.document.write(html);
+  frameWindow.document.close();
+
   window.setTimeout(() => {
-    targetWindow.print();
+    frameWindow.focus();
+    frameWindow.print();
+    window.setTimeout(() => {
+      iframe.remove();
+    }, 500);
   }, 250);
+
   return true;
 };
 
@@ -404,6 +421,7 @@ export default function LoadPoints() {
   const handlePrintPredictionReceipt = () => {
     if (!predictionReceiptToPrint) return;
     openPredictionReceiptPrint(predictionReceiptToPrint);
+    setPredictionReceiptToPrint(null);
   };
 
   const formatType = (type) => (type === "REDEEM" ? "Canje" : "Carga");
@@ -487,16 +505,6 @@ export default function LoadPoints() {
             <div className="text-sm text-green-700 bg-green-50 border border-green-100 rounded p-2">
               {message}
             </div>
-          )}
-
-          {predictionReceiptToPrint && (
-            <button
-              type="button"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white w-full p-2 rounded"
-              onClick={handlePrintPredictionReceipt}
-            >
-              Imprimir recibo
-            </button>
           )}
 
           {error && (
@@ -683,6 +691,41 @@ export default function LoadPoints() {
                   {savingPrediction ? "Guardando..." : "Guardar"}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {predictionReceiptToPrint && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-4 w-full max-w-sm space-y-3">
+            <div className="text-sm font-semibold">Recibo listo para imprimir</div>
+            <div className="text-sm text-gray-700 bg-blue-50 border border-blue-100 rounded p-3 space-y-1">
+              <div>
+                Cliente: <span className="font-semibold">{predictionReceiptToPrint.customerName || "Sin nombre"}</span>
+              </div>
+              <div>
+                Resultado: <span className="font-semibold">{predictionReceiptToPrint.resultLabel}</span>
+              </div>
+              <div>
+                Marcador: <span className="font-semibold">Argentina {predictionReceiptToPrint.argentinaGoals} - {predictionReceiptToPrint.jordaniaGoals} Jordania</span>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-3 py-1 rounded border"
+                onClick={() => setPredictionReceiptToPrint(null)}
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={handlePrintPredictionReceipt}
+              >
+                Imprimir
+              </button>
             </div>
           </div>
         </div>

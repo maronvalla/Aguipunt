@@ -76,19 +76,42 @@ export default function RedeemPrize() {
     }
   };
 
-  const openPrintWindow = () => {
-    const printWindow = window.open("", "_blank", "width=380,height=600");
-    if (!printWindow) return null;
-    printWindow.document.write(`<!DOCTYPE html>
-      <html>
-        <head><meta charset="UTF-8" /><title>Preparando recibo</title></head>
-        <body style="font-family: Arial, sans-serif; padding: 16px;">Preparando recibo...</body>
-      </html>`);
-    printWindow.document.close();
-    return printWindow;
+  const printReceiptHtml = (html) => {
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    const cleanup = () => {
+      window.setTimeout(() => {
+        iframe.remove();
+      }, 500);
+    };
+
+    const frameWindow = iframe.contentWindow;
+    if (!frameWindow) {
+      iframe.remove();
+      return false;
+    }
+
+    frameWindow.document.open();
+    frameWindow.document.write(html);
+    frameWindow.document.close();
+
+    window.setTimeout(() => {
+      frameWindow.focus();
+      frameWindow.print();
+      cleanup();
+    }, 250);
+
+    return true;
   };
 
-  const openReceiptPrint = ({ name, dniValue, points, remainingPoints, printWindow }) => {
+  const openReceiptPrint = ({ name, dniValue, points, remainingPoints }) => {
     const safeName = name || "Sin nombre";
     const safeDni = dniValue || "Sin DNI";
     const safePoints = Number.isFinite(Number(points)) ? Number(points) : 0;
@@ -127,8 +150,10 @@ export default function RedeemPrize() {
           <title>Recibo Canje</title>
           <style>
             @page { size: 80mm auto; margin: 0; }
-            body { font-family: Arial, sans-serif; margin: 0; }
-            .receipt { width: 72mm; padding: 6mm 4mm; }
+            * { box-sizing: border-box; }
+            html, body { width: 80mm; margin: 0; padding: 0; background: #fff; }
+            body { font-family: Arial, sans-serif; }
+            .receipt { width: 100%; padding: 6mm 4mm; }
             .title { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 6px; }
             .row { font-size: 12px; margin: 4px 0; }
             .label { font-weight: bold; }
@@ -148,16 +173,7 @@ export default function RedeemPrize() {
       </html>
     `;
 
-    const targetWindow = printWindow || openPrintWindow();
-    if (!targetWindow) return false;
-    targetWindow.document.open();
-    targetWindow.document.write(html);
-    targetWindow.document.close();
-    targetWindow.focus();
-    window.setTimeout(() => {
-      targetWindow.print();
-    }, 250);
-    return true;
+    return printReceiptHtml(html);
   };
 
   const getPrizePoints = () => {
@@ -255,6 +271,7 @@ export default function RedeemPrize() {
   const handlePrintReceipt = () => {
     if (!receiptToPrint) return;
     openReceiptPrint(receiptToPrint);
+    setReceiptToPrint(null);
   };
 
   const handleDniKeyDown = (e) => {
@@ -433,16 +450,6 @@ export default function RedeemPrize() {
             </div>
           )}
 
-          {receiptToPrint && (
-            <button
-              type="button"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white w-full p-2 rounded"
-              onClick={handlePrintReceipt}
-            >
-              Imprimir recibo
-            </button>
-          )}
-
           {error && (
             <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded p-2">
               {error}
@@ -597,6 +604,41 @@ export default function RedeemPrize() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {receiptToPrint && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-4 w-full max-w-sm space-y-3">
+            <div className="text-sm font-semibold">Recibo listo para imprimir</div>
+            <div className="text-sm text-gray-700 bg-blue-50 border border-blue-100 rounded p-3 space-y-1">
+              <div>
+                Cliente: <span className="font-semibold">{receiptToPrint.name || "Sin nombre"}</span>
+              </div>
+              <div>
+                DNI: <span className="font-semibold">{receiptToPrint.dniValue || "Sin DNI"}</span>
+              </div>
+              <div>
+                Puntos: <span className="font-semibold">{receiptToPrint.points}</span>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-3 py-1 rounded border"
+                onClick={() => setReceiptToPrint(null)}
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={handlePrintReceipt}
+              >
+                Imprimir
+              </button>
+            </div>
           </div>
         </div>
       )}
