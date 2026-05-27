@@ -19,7 +19,7 @@
       "dni": "43566609",
       "nombre": "exequiel",
       "celular": null,
-      "puntos": 0
+      "puntos": 50
     },
     {
       "id": 2,
@@ -102,6 +102,23 @@
       "prizeid": null,
       "originaltransactionid": null,
       "createdat": "2026-05-27T05:54:59.528Z",
+      "voidedat": null,
+      "voidedbyuserid": null,
+      "voidreason": null
+    },
+    {
+      "id": 5,
+      "customerid": 1,
+      "type": "LOAD",
+      "operations": 1,
+      "points": 50,
+      "note": null,
+      "userid": 2,
+      "username": "cajero",
+      "redeemmode": "2026-05-27T12:05:49.586Z",
+      "prizeid": null,
+      "originaltransactionid": null,
+      "createdat": "2026-05-27T12:05:49.586Z",
       "voidedat": null,
       "voidedbyuserid": null,
       "voidreason": null
@@ -212,6 +229,21 @@
       "createdat": "2026-05-27T05:54:59.673Z",
       "userid": 2,
       "username": "cajero"
+    },
+    {
+      "id": 8,
+      "customerid": 1,
+      "customer_name_snapshot": "exequiel",
+      "customer_dni_snapshot": "43566609",
+      "match_key": "argentina-vs-jordania-2026-06-27",
+      "match_label": "Argentina vs Jordania",
+      "match_date": "2026-06-27",
+      "predicted_outcome": "ARG",
+      "argentina_goals": 1,
+      "jordania_goals": 0,
+      "createdat": "2026-05-27T12:05:49.607Z",
+      "userid": 2,
+      "username": "cajero"
     }
   ],
   "settings": [],
@@ -219,7 +251,7 @@
     "users": 2,
     "customers": 3,
     "prizes": 0,
-    "transactions": 4,
-    "predictions": 7
+    "transactions": 5,
+    "predictions": 8
   }
 }

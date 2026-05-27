@@ -36,6 +36,7 @@ const openPredictionReceiptPrint = ({
   argentinaGoals,
   jordaniaGoals,
   currentPoints,
+  printWindow,
 }) => {
   const safeCustomerName = customerName || "Sin nombre";
   const safeResultLabel = resultLabel || "Sin resultado";
@@ -92,11 +93,13 @@ const openPredictionReceiptPrint = ({
     </html>
   `;
 
-  const printWindow = window.open("", "print-prediction-receipt", "width=320,height=520");
-  if (!printWindow) return;
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
+  const targetWindow =
+    printWindow ||
+    window.open("", "print-prediction-receipt", "width=320,height=520");
+  if (!targetWindow) return;
+  targetWindow.document.open();
+  targetWindow.document.write(html);
+  targetWindow.document.close();
 };
 
 const FlagIcon = ({ kind }) => {
@@ -294,6 +297,9 @@ export default function LoadPoints() {
       puntosAgregados: Number(pointsCalculated),
       operations: operacionesNumber,
     };
+    const receiptWindow = pendingPrediction
+      ? window.open("", "print-prediction-receipt", "width=320,height=520")
+      : null;
     try {
       const res = await api.post("/api/points/points/load", body);
       let predictionSaved = false;
@@ -312,8 +318,10 @@ export default function LoadPoints() {
             argentinaGoals: pendingPrediction.argentinaGoals,
             jordaniaGoals: pendingPrediction.jordaniaGoals,
             currentPoints: res.data.newPoints,
+            printWindow: receiptWindow,
           });
         } catch (predictionSaveError) {
+          receiptWindow?.close();
           setError(
             predictionSaveError?.response?.data?.message ||
               "Los puntos se cargaron, pero no se pudo guardar el pronostico."
@@ -334,6 +342,7 @@ export default function LoadPoints() {
       }
       fetchTransactions(selectedCustomerId);
     } catch (e) {
+      receiptWindow?.close();
       const data = e?.response?.data;
       setError(data?.error || data?.message || "Error al cargar puntos");
     }
