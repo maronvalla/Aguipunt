@@ -1,6 +1,7 @@
 # Aguipuntos
 
 Nota de encoding: Todos los archivos deben guardarse en UTF-8 (sin BOM).
+Nota de prueba: cambio sin impacto funcional para verificar la rama.
 
 ## Desarrollo local
 

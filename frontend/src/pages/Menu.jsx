@@ -72,6 +72,14 @@ export default function Menu() {
           {isAdmin && (
             <a
               className="block bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-center"
+              href="/raffle"
+            >
+              Sorteo
+            </a>
+          )}
+          {isAdmin && (
+            <a
+              className="block bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-center"
               href="/users"
             >
               Usuarios

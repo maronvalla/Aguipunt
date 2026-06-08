@@ -21,7 +21,11 @@ router.get("/customers", requireRole("admin"), (req, res) => {
   const params = search ? [like, like, limit, offset] : [limit, offset];
 
   db.all(
-    `SELECT id, nombre, dni, puntos
+    `SELECT id,
+            nombre,
+            dni,
+            puntos,
+            to_char(createdat, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS "createdAt"
      FROM customers
      ${where}
      ORDER BY nombre ASC
@@ -67,6 +71,7 @@ router.get("/customers/by-id/:id", requireRole("admin"), (req, res) => {
       nombre: row.nombre,
       celular: row.celular,
       puntos: row.puntos,
+      createdAt: row.createdat || row.createdAt || null,
     });
   });
 });

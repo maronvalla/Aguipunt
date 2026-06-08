@@ -3,7 +3,7 @@
     {
       "id": 1,
       "username": "admin",
-      "password_hash": "$2a$10$jHRX/cTaonBaXRbphkJ8xOIdyJFHs8HNpySHYjpncn4L7hjCFSBQu",
+      "password_hash": "$2a$10$HajPRhm9BfIF/6KFva8Jleo4X/rW/x8LqTmqN7t.3aKm3OgXVTIHa",
       "role": "admin"
     },
     {
@@ -19,21 +19,24 @@
       "dni": "43566609",
       "nombre": "exequiel",
       "celular": null,
-      "puntos": 50
+      "puntos": 50,
+      "createdat": null
     },
     {
       "id": 2,
       "dni": "45455444",
       "nombre": "exequiel",
       "celular": "1",
-      "puntos": 0
+      "puntos": 0,
+      "createdat": null
     },
     {
       "id": 3,
       "dni": "43566607",
       "nombre": "exeq",
       "celular": "1",
-      "puntos": 250
+      "puntos": 250,
+      "createdat": null
     }
   ],
   "prizes": [],

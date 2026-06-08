@@ -118,6 +118,91 @@ const openPredictionReceiptPrint = ({
   return true;
 };
 
+const openRaffleReceiptPrint = ({
+  customerName,
+  pointsLoaded,
+  chanceCount,
+}) => {
+  const safeCustomerName = customerName || "Sin nombre";
+  const safePointsLoaded = Number.isFinite(Number(pointsLoaded))
+    ? Number(pointsLoaded)
+    : 0;
+  const safeChanceCount = Number.isFinite(Number(chanceCount))
+    ? Number(chanceCount)
+    : 0;
+  const formattedDate = new Date().toLocaleString("es-AR", {
+    timeZone: "America/Argentina/Tucuman",
+  });
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8" />
+        <title>Ticket Sorteo</title>
+        <style>
+          @page { size: 80mm auto; margin: 0; }
+          * { box-sizing: border-box; }
+          html, body { width: 80mm; margin: 0; padding: 0; background: #fff; }
+          body { font-family: Arial, sans-serif; }
+          .receipt { width: 100%; padding: 6mm 4mm; }
+          .title { font-size: 13px; font-weight: bold; text-align: center; margin-bottom: 6px; }
+          .subtitle { font-size: 10px; text-align: center; margin-bottom: 8px; }
+          .row { font-size: 11px; margin: 4px 0; }
+          .label { font-weight: bold; }
+          .headline { font-size: 15px; font-weight: bold; text-align: center; margin: 10px 0 8px; text-transform: uppercase; }
+          .chance { font-size: 18px; font-weight: bold; text-align: center; margin: 8px 0; }
+          .divider { border-top: 1px dashed #000; margin: 8px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="receipt">
+          <div class="title">Aguipuntos</div>
+          <div class="subtitle">Ticket sorteo junio</div>
+          <div class="row"><span class="label">Fecha:</span> ${formattedDate}</div>
+          <div class="row"><span class="label">Cliente:</span> ${safeCustomerName}</div>
+          <div class="divider"></div>
+          <div class="headline">Ya estas participando</div>
+          <div class="row"><span class="label">Puntos cargados:</span> ${safePointsLoaded}</div>
+          <div class="chance">Chances hasta ahora: ${safeChanceCount}</div>
+          <div class="divider"></div>
+          <div class="subtitle">Durante junio, cada carga suma una chance.</div>
+          <div class="subtitle">Avenida Mitre 577 - Aguilares</div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+
+  const frameWindow = iframe.contentWindow;
+  if (!frameWindow) {
+    iframe.remove();
+    return false;
+  }
+
+  frameWindow.document.open();
+  frameWindow.document.write(html);
+  frameWindow.document.close();
+
+  window.setTimeout(() => {
+    frameWindow.focus();
+    frameWindow.print();
+    window.setTimeout(() => {
+      iframe.remove();
+    }, 500);
+  }, 250);
+
+  return true;
+};
+
 const FlagIcon = ({ kind }) => {
   if (kind === "argentina") {
     return (
@@ -166,6 +251,7 @@ export default function LoadPoints() {
   const [predictionError, setPredictionError] = useState("");
   const [predictionSuccess, setPredictionSuccess] = useState("");
   const [predictionReceiptToPrint, setPredictionReceiptToPrint] = useState(null);
+  const [raffleReceiptToPrint, setRaffleReceiptToPrint] = useState(null);
   const [savingPrediction, setSavingPrediction] = useState(false);
   const lookupTimeoutRef = useRef(null);
 
@@ -275,6 +361,7 @@ export default function LoadPoints() {
     setPendingPrediction(null);
     setPredictionSuccess("");
     setPredictionReceiptToPrint(null);
+    setRaffleReceiptToPrint(null);
     if (!trimmedDni || trimmedDni.length < 7) {
       setLoadingLookup(false);
       return;
@@ -303,6 +390,7 @@ export default function LoadPoints() {
     setError("");
     setMessage("");
     setPredictionReceiptToPrint(null);
+    setRaffleReceiptToPrint(null);
     if (!isCustomerLoaded) {
       setError("Primero buscá y cargá el cliente.");
       return;
@@ -353,6 +441,9 @@ export default function LoadPoints() {
       setOperaciones("");
       if (predictionSaved) {
         setPendingPrediction(null);
+      }
+      if (res.data?.raffleTicket) {
+        setRaffleReceiptToPrint(res.data.raffleTicket);
       }
       fetchTransactions(selectedCustomerId);
     } catch (e) {
@@ -422,6 +513,12 @@ export default function LoadPoints() {
     if (!predictionReceiptToPrint) return;
     openPredictionReceiptPrint(predictionReceiptToPrint);
     setPredictionReceiptToPrint(null);
+  };
+
+  const handlePrintRaffleReceipt = () => {
+    if (!raffleReceiptToPrint) return;
+    openRaffleReceiptPrint(raffleReceiptToPrint);
+    setRaffleReceiptToPrint(null);
   };
 
   const formatType = (type) => (type === "REDEEM" ? "Canje" : "Carga");
@@ -723,6 +820,44 @@ export default function LoadPoints() {
                 type="button"
                 className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white"
                 onClick={handlePrintPredictionReceipt}
+              >
+                Imprimir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {raffleReceiptToPrint && !predictionReceiptToPrint && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-4 w-full max-w-sm space-y-3">
+            <div className="text-sm font-semibold">Ticket de sorteo listo para imprimir</div>
+            <div className="text-sm text-gray-700 bg-blue-50 border border-blue-100 rounded p-3 space-y-1">
+              <div>
+                Cliente: <span className="font-semibold">{raffleReceiptToPrint.customerName || "Sin nombre"}</span>
+              </div>
+              <div>
+                Puntos cargados: <span className="font-semibold">{raffleReceiptToPrint.pointsLoaded}</span>
+              </div>
+              <div>
+                Chances hasta ahora: <span className="font-semibold">{raffleReceiptToPrint.chanceCount}</span>
+              </div>
+              <div className="pt-1 text-center font-semibold text-emerald-700">
+                Ya estas participando
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-3 py-1 rounded border"
+                onClick={() => setRaffleReceiptToPrint(null)}
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={handlePrintRaffleReceipt}
               >
                 Imprimir
               </button>

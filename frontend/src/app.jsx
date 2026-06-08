@@ -11,6 +11,7 @@ import Customers from "./pages/Customers";
 import CustomerDetail from "./pages/CustomerDetail";
 import Reports from "./pages/Reports";
 import Predictions from "./pages/Predictions";
+import Raffle from "./pages/Raffle";
 import Users from "./pages/Users";
 
 function RootRedirect() {
@@ -93,6 +94,15 @@ export default function App() {
           element={
             <RoleRoute role="admin">
               <Predictions />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/raffle"
+          element={
+            <RoleRoute role="admin">
+              <Raffle />
             </RoleRoute>
           }
         />

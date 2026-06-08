@@ -13,6 +13,7 @@ const pointsRoutes = require("./routes/points");
 const prizesRoutes = require("./routes/prizes");
 const predictionsRoutes = require("./routes/predictions");
 const reportsRoutes = require("./routes/reports");
+const raffleRoutes = require("./routes/raffle");
 const usersRoutes = require("./routes/users");
 
 const requireAuth = require("./middleware/auth");
@@ -119,6 +120,7 @@ app.use("/api/points", pointsRoutes);
 app.use("/api/prizes", prizesRoutes);
 app.use("/api/predictions", predictionsRoutes);
 app.use("/api/reports", reportsRoutes);
+app.use("/api/raffle", raffleRoutes);
 app.use("/api/users", usersRoutes);
 
 /* =======================

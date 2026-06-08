@@ -395,6 +395,7 @@ const runDevQuery = async (sql, params = []) => {
       nombre: params[1],
       celular: params[2] || null,
       puntos: Number(params[3] || 0),
+      createdat: params[4] || new Date().toISOString(),
     };
     devState.customers.push(customer);
     saveDevState();
@@ -561,6 +562,17 @@ const getDevQuery = async (sql, params = []) => {
     const total = queryLoadTransactions(params).rows.reduce((acc, row) => acc + Number(row.points || 0), 0);
     return { total_points_loaded: total };
   }
+  if (normalized.startsWith("SELECT COUNT(1)::int AS \"chanceCount\" FROM transactions")) {
+    const [customerId, start, end] = params;
+    const chanceCount = devState.transactions.filter(
+      (tx) =>
+        tx.customerid === customerId &&
+        tx.type === "LOAD" &&
+        !tx.voidedat &&
+        withinRange(tx.createdat, start, end)
+    ).length;
+    return { chanceCount };
+  }
   if (normalized.startsWith("SELECT t.username, COALESCE(SUM(t.points), 0) AS total_points FROM transactions t")) {
     const grouped = new Map();
     for (const row of queryLoadTransactions(params).rows) {
@@ -585,7 +597,7 @@ const allDevQuery = async (sql, params = []) => {
   if (normalized.startsWith("SELECT id, nombre, costo_puntos FROM prizes ORDER BY id ASC")) {
     return createDevResult([...devState.prizes].sort((a, b) => a.id - b.id));
   }
-  if (normalized.startsWith("SELECT id, nombre, dni, puntos FROM customers")) {
+  if (normalized.startsWith("SELECT id, nombre, dni, puntos")) {
     const search = params.length > 2 ? params[0] : null;
     const limit = params[params.length - 2];
     const offset = params[params.length - 1];
@@ -593,7 +605,13 @@ const allDevQuery = async (sql, params = []) => {
       .filter((item) => !search || ilike(item.nombre, params[0]) || ilike(item.dni, params[1]))
       .sort((a, b) => sortByText(a, b, (row) => row.nombre))
       .slice(offset, offset + limit)
-      .map(({ id, nombre, dni, puntos }) => ({ id, nombre, dni, puntos }));
+      .map(({ id, nombre, dni, puntos, createdat }) => ({
+        id,
+        nombre,
+        dni,
+        puntos,
+        createdAt: toIso(createdat),
+      }));
     return createDevResult(rows);
   }
   if (normalized.startsWith("SELECT dni, nombre, celular, puntos FROM customers")) {
@@ -617,6 +635,63 @@ const allDevQuery = async (sql, params = []) => {
   }
   if (normalized.startsWith("SELECT t.id, to_char(t.createdat")) {
     return queryLoadTransactions(params, { includeCustomerJoin: true });
+  }
+  if (normalized.startsWith("WITH raffle_entries AS")) {
+    const [start, end] = params;
+    const hasSearch =
+      normalized.includes('e."customerName" ILIKE') ||
+      normalized.includes("c.nombre ILIKE");
+    const hasUserSearch = normalized.includes("e.\"userName\" ILIKE");
+    let search = null;
+    let userSearch = null;
+    if (hasSearch) {
+      search = params[2];
+      if (hasUserSearch) userSearch = params[5];
+    } else if (hasUserSearch) {
+      userSearch = params[2];
+    }
+
+    const allEntries = devState.transactions
+      .filter((tx) => tx.type === "LOAD" && !tx.voidedat && withinRange(tx.createdat, start, end))
+      .sort((a, b) => new Date(a.createdat) - new Date(b.createdat) || a.id - b.id)
+      .map((tx, index) => {
+        const customer = devState.customers.find((item) => item.id === tx.customerid);
+        return {
+          id: tx.id,
+          chanceNumber: index + 1,
+          createdAt: toIso(tx.createdat),
+          points: tx.points,
+          operations: tx.operations,
+          userId: tx.userid,
+          userName: tx.username,
+          customerId: tx.customerid,
+          customerDni: customer?.dni || null,
+          customerName: customer?.nombre || null,
+          customerPhone: customer?.celular || null,
+        };
+      });
+
+    const rows = allEntries
+      .filter((row) => {
+        if (!search) return true;
+        return (
+          ilike(row.customerName, search) ||
+          ilike(row.customerDni, search) ||
+          ilike(row.customerPhone, search)
+        );
+      })
+      .filter((row) => !userSearch || ilike(row.userName, userSearch))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt) || b.id - a.id);
+
+    return createDevResult(rows);
+  }
+  if (normalized.startsWith("SELECT dni, nombre, celular FROM customers WHERE createdat >=")) {
+    const [start, end] = params;
+    const rows = devState.customers
+      .filter((customer) => customer.createdat && withinRange(customer.createdat, start, end))
+      .sort((a, b) => new Date(a.createdat) - new Date(b.createdat) || sortByText(a, b, (row) => row.nombre))
+      .map(({ dni, nombre, celular }) => ({ dni, nombre, celular }));
+    return createDevResult(rows);
   }
   if (normalized.startsWith("SELECT t.userid AS \"userId\", t.username AS \"userName\", COALESCE(SUM(CASE")) {
     return queryRedeemSummary(params, false);
@@ -771,7 +846,8 @@ if (isPlaceholderDatabaseUrl(connectionString)) {
         dni TEXT UNIQUE NOT NULL,
         nombre TEXT NOT NULL,
         celular TEXT,
-        puntos INT NOT NULL DEFAULT 0
+        puntos INT NOT NULL DEFAULT 0,
+        createdat TIMESTAMP DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS prizes (
@@ -819,6 +895,12 @@ if (isPlaceholderDatabaseUrl(connectionString)) {
     `);
 
     await pool.query(`
+      ALTER TABLE customers
+      ADD COLUMN IF NOT EXISTS createdat TIMESTAMP;
+
+      ALTER TABLE customers
+      ALTER COLUMN createdat SET DEFAULT NOW();
+
       ALTER TABLE transactions
       ADD COLUMN IF NOT EXISTS redeemmode TEXT;
 
@@ -830,6 +912,7 @@ if (isPlaceholderDatabaseUrl(connectionString)) {
       CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_unique ON users(username);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_dni_unique ON customers(dni);
       CREATE INDEX IF NOT EXISTS idx_customers_nombre ON customers(nombre);
+      CREATE INDEX IF NOT EXISTS idx_customers_createdat ON customers(createdat);
       CREATE INDEX IF NOT EXISTS idx_transactions_customerid ON transactions(customerid);
       CREATE INDEX IF NOT EXISTS idx_prizes_id ON prizes(id);
       CREATE INDEX IF NOT EXISTS idx_predictions_createdat ON predictions(createdat DESC);
