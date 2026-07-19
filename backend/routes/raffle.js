@@ -107,6 +107,41 @@ const createRaffleRouter = (deps = {}) => {
     }
   });
 
+  router.get("/top-loaders", requireRole("admin"), async (_req, res) => {
+    const range = getCampaignRange({ now: getNow() });
+
+    try {
+      const result = await db.all(
+        `SELECT t.userid AS "userId",
+                t.username AS "userName",
+                COALESCE(SUM(t.points), 0)::int AS "totalPoints",
+                COUNT(1)::int AS "loadCount"
+         FROM transactions t
+         WHERE t.type = 'LOAD'
+           AND t.voidedat IS NULL
+           AND t.username IS NOT NULL
+           AND t.createdat >= $1
+           AND t.createdat < $2
+         GROUP BY t.userid, t.username
+         ORDER BY "totalPoints" DESC, "loadCount" DESC, "userName" ASC
+         LIMIT 5`,
+        [range.startSql, range.endSql]
+      );
+
+      const items = (result?.rows || []).map((row) => ({
+        userId: row.userId ?? null,
+        userName: row.userName || "Sin usuario",
+        totalPoints: Number(row.totalPoints || 0),
+        loadCount: Number(row.loadCount || 0),
+      }));
+
+      return res.json({ items });
+    } catch (err) {
+      console.error("Error al cargar ranking del sorteo:", err);
+      return res.status(500).json({ message: "Error al cargar el ranking." });
+    }
+  });
+
   router.post("/draw", requireRole("admin"), async (_req, res) => {
     const now = getNow();
     const range = getCampaignRange({ now });

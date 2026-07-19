@@ -252,6 +252,45 @@ test("campaign range ends at draw time and is capped after July", () => {
   assert.equal(isCampaignTimestamp("2026-08-01T03:00:00.000Z"), false);
 });
 
+test("GET /top-loaders returns the five users with the most loaded points", async () => {
+  const captured = {};
+  const db = {
+    all: async (sql, params) => {
+      captured.sql = sql;
+      captured.params = params;
+      return {
+        rows: [
+          { userId: 2, userName: "cajero1", totalPoints: "12500", loadCount: "31" },
+          { userId: 3, userName: "cajero2", totalPoints: "9800", loadCount: "22" },
+        ],
+      };
+    },
+  };
+  const app = express();
+  app.use(
+    "/api/raffle",
+    createRaffleRouter({
+      db,
+      requireRole: allowAllRole,
+      getNow: () => new Date("2026-07-18T15:30:45.000Z"),
+    })
+  );
+
+  const { status, json } = await requestJson(app, "/api/raffle/top-loaders");
+
+  assert.equal(status, 200);
+  assert.match(captured.sql, /SUM\(t\.points\)/);
+  assert.match(captured.sql, /LIMIT 5/);
+  assert.deepEqual(captured.params, [
+    "2026-06-01 03:00:00",
+    "2026-07-18 15:30:45",
+  ]);
+  assert.deepEqual(json.items, [
+    { userId: 2, userName: "cajero1", totalPoints: 12500, loadCount: 31 },
+    { userId: 3, userName: "cajero2", totalPoints: 9800, loadCount: 22 },
+  ]);
+});
+
 const makeDrawDb = (entries = []) => {
   let storedValue = null;
   return {

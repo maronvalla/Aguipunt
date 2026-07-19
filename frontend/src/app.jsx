@@ -10,7 +10,6 @@ import RedeemPrize from "./pages/RedeemPrize";
 import Customers from "./pages/Customers";
 import CustomerDetail from "./pages/CustomerDetail";
 import Reports from "./pages/Reports";
-import Predictions from "./pages/Predictions";
 import Raffle from "./pages/Raffle";
 import Users from "./pages/Users";
 
@@ -85,15 +84,6 @@ export default function App() {
           element={
             <RoleRoute role="admin">
               <Reports />
-            </RoleRoute>
-          }
-        />
-
-        <Route
-          path="/predictions"
-          element={
-            <RoleRoute role="admin">
-              <Predictions />
             </RoleRoute>
           }
         />

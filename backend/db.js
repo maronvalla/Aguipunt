@@ -591,6 +591,33 @@ const getDevQuery = async (sql, params = []) => {
 const allDevQuery = async (sql, params = []) => {
   const normalized = sql.replace(/\s+/g, " ").trim();
 
+  if (normalized.startsWith('SELECT t.userid AS "userId", t.username AS "userName", COALESCE(SUM(t.points), 0)::int AS "totalPoints"')) {
+    const grouped = new Map();
+    for (const row of queryLoadTransactions(params).rows) {
+      if (!row.userName) continue;
+      const key = `${row.userId ?? "null"}__${row.userName}`;
+      const current = grouped.get(key) || {
+        userId: row.userId ?? null,
+        userName: row.userName,
+        totalPoints: 0,
+        loadCount: 0,
+      };
+      current.totalPoints += Number(row.points || 0);
+      current.loadCount += 1;
+      grouped.set(key, current);
+    }
+    return createDevResult(
+      [...grouped.values()]
+        .sort(
+          (a, b) =>
+            b.totalPoints - a.totalPoints ||
+            b.loadCount - a.loadCount ||
+            sortByText(a, b, (row) => row.userName)
+        )
+        .slice(0, 5)
+    );
+  }
+
   if (normalized.startsWith("SELECT id, username, role FROM users ORDER BY id ASC")) {
     return createDevResult([...devState.users].sort((a, b) => a.id - b.id).map(({ id, username, role }) => ({ id, username, role })));
   }
