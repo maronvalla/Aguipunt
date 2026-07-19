@@ -4,14 +4,22 @@ const express = require("express");
 const ExcelJS = require("exceljs");
 
 const { createRaffleRouter } = require("../routes/raffle");
+const {
+  getCampaignRange,
+  isCampaignTimestamp,
+} = require("../services/raffleCampaign");
 
 const allowAllRole = () => (_req, _res, next) => next();
 
-const requestJson = async (app, path) => {
+const requestJson = async (app, path, { method = "GET", body } = {}) => {
   const server = app.listen(0);
   try {
     const { port } = server.address();
-    const res = await fetch(`http://127.0.0.1:${port}${path}`);
+    const res = await fetch(`http://127.0.0.1:${port}${path}`, {
+      method,
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
     const json = await res.json();
     return { status: res.status, json };
   } finally {
@@ -77,7 +85,7 @@ const makeRaffleDb = (transactions) => ({
   },
 });
 
-test("GET /entries returns only valid June LOAD entries and one chance per load", async () => {
+test("GET /entries returns valid June and July LOAD entries and one chance per load", async () => {
   const db = makeRaffleDb([
     {
       id: 1,
@@ -138,17 +146,18 @@ test("GET /entries returns only valid June LOAD entries and one chance per load"
   const { status, json } = await requestJson(app, "/api/raffle/entries");
 
   assert.equal(status, 200);
-  assert.equal(json.items.length, 2);
+  assert.equal(json.items.length, 3);
   assert.deepEqual(
     json.items.map((item) => item.id),
-    [2, 1]
+    [4, 2, 1]
   );
   assert.deepEqual(
     json.items.map((item) => item.chanceNumber),
-    [2, 1]
+    [3, 2, 1]
   );
-  assert.equal(json.items[1].points, 250);
-  assert.equal(json.items[1].chanceNumber, 1);
+  assert.equal(json.items[2].points, 250);
+  assert.equal(json.items[2].chanceNumber, 1);
+  assert.equal(json.campaign.to, "2026-07-31");
 });
 
 test("GET /entries respects customer and loader filters without renumbering chances", async () => {
@@ -230,4 +239,138 @@ test("GET /new-registrations/export.xlsx exports only registration columns", asy
   assert.deepEqual(sheet.getRow(1).values.slice(1), ["DNI", "Nombre", "Celular"]);
   assert.deepEqual(sheet.getRow(2).values.slice(1), ["111", "Ana Gomez", "381"]);
   assert.equal(sheet.columnCount, 3);
+});
+
+test("campaign range ends at draw time and is capped after July", () => {
+  const duringJuly = getCampaignRange({ now: "2026-07-18T15:30:45.000Z" });
+  assert.equal(duringJuly.startSql, "2026-06-01 03:00:00");
+  assert.equal(duringJuly.endSql, "2026-07-18 15:30:45");
+
+  const afterCampaign = getCampaignRange({ now: "2026-08-10T12:00:00.000Z" });
+  assert.equal(afterCampaign.endSql, "2026-08-01 03:00:00");
+  assert.equal(isCampaignTimestamp("2026-08-01T02:59:59.999Z"), true);
+  assert.equal(isCampaignTimestamp("2026-08-01T03:00:00.000Z"), false);
+});
+
+const makeDrawDb = (entries = []) => {
+  let storedValue = null;
+  return {
+    all: async () => ({ rows: entries }),
+    get: async (_sql, params) =>
+      params[0] && storedValue ? { value: storedValue } : null,
+    run: async (_sql, params) => {
+      storedValue = params[1];
+      return { rows: [], rowCount: 1 };
+    },
+    stored: () => (storedValue ? JSON.parse(storedValue) : null),
+  };
+};
+
+test("POST /draw selects one load uniformly and persists the result", async () => {
+  const entries = [
+    {
+      id: 10,
+      chanceNumber: 1,
+      customerId: 7,
+      customerName: "Ana",
+      customerPhone: "381111111",
+    },
+    {
+      id: 11,
+      chanceNumber: 2,
+      customerId: 7,
+      customerName: "Ana",
+      customerPhone: "381111111",
+    },
+    {
+      id: 12,
+      chanceNumber: 3,
+      customerId: 8,
+      customerName: "Bruno",
+      customerPhone: "381222222",
+    },
+  ];
+  const db = makeDrawDb(entries);
+  const app = express();
+  app.use(
+    "/api/raffle",
+    createRaffleRouter({
+      db,
+      requireRole: allowAllRole,
+      randomInt: (max) => {
+        assert.equal(max, 3);
+        return 1;
+      },
+      getNow: () => new Date("2026-07-18T15:30:45.000Z"),
+    })
+  );
+
+  const { status, json } = await requestJson(app, "/api/raffle/draw", {
+    method: "POST",
+  });
+
+  assert.equal(status, 200);
+  assert.equal(json.winner.customerName, "Ana");
+  assert.equal(json.chanceNumber, 2);
+  assert.equal(json.eligibleEntryCount, 3);
+  assert.deepEqual(db.stored(), json);
+
+  const saved = await requestJson(app, "/api/raffle/result");
+  assert.equal(saved.status, 200);
+  assert.deepEqual(saved.json.result, json);
+});
+
+test("POST /draw replaces the previously saved winner", async () => {
+  const entries = [
+    { id: 20, chanceNumber: 1, customerName: "Ana" },
+    { id: 21, chanceNumber: 2, customerName: "Bruno" },
+  ];
+  const picks = [0, 1];
+  const db = makeDrawDb(entries);
+  const app = express();
+  app.use(
+    "/api/raffle",
+    createRaffleRouter({
+      db,
+      requireRole: allowAllRole,
+      randomInt: () => picks.shift(),
+      getNow: () => new Date("2026-07-18T15:30:45.000Z"),
+    })
+  );
+
+  await requestJson(app, "/api/raffle/draw", { method: "POST" });
+  await requestJson(app, "/api/raffle/draw", { method: "POST" });
+
+  assert.equal(db.stored().winner.customerName, "Bruno");
+  assert.equal(db.stored().chanceNumber, 2);
+});
+
+test("POST /draw reports when there are no eligible entries", async () => {
+  const app = express();
+  app.use(
+    "/api/raffle",
+    createRaffleRouter({
+      db: makeDrawDb([]),
+      requireRole: allowAllRole,
+      getNow: () => new Date("2026-07-18T15:30:45.000Z"),
+    })
+  );
+
+  const { status, json } = await requestJson(app, "/api/raffle/draw", {
+    method: "POST",
+  });
+  assert.equal(status, 409);
+  assert.match(json.message, /No hay cargas válidas/);
+});
+
+test("raffle endpoints reject non-admin users", async () => {
+  const app = express();
+  app.use((req, _res, next) => {
+    req.user = { id: 2, role: "operator" };
+    next();
+  });
+  app.use("/api/raffle", createRaffleRouter({ db: makeDrawDb([]) }));
+
+  const { status } = await requestJson(app, "/api/raffle/result");
+  assert.equal(status, 403);
 });

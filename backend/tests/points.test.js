@@ -69,7 +69,7 @@ const makeDb = ({ createdAt }) => {
   };
 };
 
-test("POST /points/load returns raffle ticket data during June campaign", async () => {
+test("POST /points/load returns raffle ticket data during June and July campaign", async () => {
   const app = express();
   app.use(express.json());
   app.use(
@@ -95,7 +95,7 @@ test("POST /points/load returns raffle ticket data during June campaign", async 
   });
 });
 
-test("POST /points/load does not return raffle ticket outside June campaign", async () => {
+test("POST /points/load returns raffle ticket data during July campaign", async () => {
   const app = express();
   app.use(express.json());
   app.use(
@@ -103,6 +103,31 @@ test("POST /points/load does not return raffle ticket outside June campaign", as
     createPointsRouter({
       db: makeDb({ createdAt: "2026-07-02T15:00:00.000Z" }),
       getUtcIsoNow: () => "2026-07-02T15:00:00.000Z",
+    })
+  );
+
+  const { status, json } = await requestJson(app, "/api/points/points/load", {
+    dni: "12345678",
+    puntosAgregados: 50,
+    operations: 1,
+  });
+
+  assert.equal(status, 200);
+  assert.deepEqual(json.raffleTicket, {
+    customerName: "Ana Gomez",
+    pointsLoaded: 50,
+    chanceCount: 2,
+  });
+});
+
+test("POST /points/load does not return raffle ticket outside campaign", async () => {
+  const app = express();
+  app.use(express.json());
+  app.use(
+    "/api/points",
+    createPointsRouter({
+      db: makeDb({ createdAt: "2026-08-01T03:00:00.000Z" }),
+      getUtcIsoNow: () => "2026-08-01T03:00:00.000Z",
     })
   );
 

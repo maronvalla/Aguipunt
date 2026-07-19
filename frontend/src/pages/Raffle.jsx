@@ -6,10 +6,14 @@ export default function Raffle() {
   const [search, setSearch] = useState("");
   const [userFilter, setUserFilter] = useState("");
   const [items, setItems] = useState([]);
-  const [campaign, setCampaign] = useState({ from: "2026-06-01", to: "2026-06-30" });
+  const [campaign, setCampaign] = useState({ from: "2026-06-01", to: "2026-07-31" });
+  const [winner, setWinner] = useState(null);
+  const [countdown, setCountdown] = useState(null);
+  const [drawing, setDrawing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const activeRequest = useRef(null);
+  const drawRequestStarted = useRef(false);
 
   const buildEntriesQuery = () => {
     const params = new URLSearchParams();
@@ -49,6 +53,35 @@ export default function Raffle() {
     }
   };
 
+  const fetchLastResult = async () => {
+    try {
+      const res = await api.get("/api/raffle/result");
+      setWinner(res.data?.result || null);
+    } catch (e) {
+      setError(e?.response?.data?.message || "Error al cargar el ganador.");
+    }
+  };
+
+  const executeDraw = async () => {
+    setDrawing(true);
+    setError("");
+    try {
+      const res = await api.post("/api/raffle/draw");
+      setWinner(res.data || null);
+    } catch (e) {
+      setError(e?.response?.data?.message || "Error al realizar el sorteo.");
+    } finally {
+      setDrawing(false);
+      setCountdown(null);
+    }
+  };
+
+  const activateDraw = () => {
+    setError("");
+    drawRequestStarted.current = false;
+    setCountdown(10);
+  };
+
   const downloadNewRegistrations = async () => {
     try {
       setError("");
@@ -68,7 +101,7 @@ export default function Raffle() {
       const href = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = href;
-      link.download = "nuevos-registrados-junio-2026.xlsx";
+      link.download = "nuevos-registrados-junio-julio-2026.xlsx";
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -90,6 +123,28 @@ export default function Raffle() {
     };
   }, [search, userFilter]);
 
+  useEffect(() => {
+    fetchLastResult();
+  }, []);
+
+  useEffect(() => {
+    if (countdown === null) return undefined;
+    if (countdown === 0) {
+      if (!drawRequestStarted.current) {
+        drawRequestStarted.current = true;
+        executeDraw();
+      }
+      return undefined;
+    }
+
+    const handle = setTimeout(() => {
+      setCountdown((current) => current - 1);
+    }, 1000);
+    return () => clearTimeout(handle);
+  }, [countdown]);
+
+  const drawInProgress = countdown !== null || drawing;
+
   return (
     <div className="min-h-screen bg-blue-500 flex items-center justify-center p-4">
       <div className="bg-white p-6 rounded-lg shadow w-full max-w-6xl space-y-4">
@@ -104,6 +159,62 @@ export default function Raffle() {
             Volver
           </a>
         </div>
+
+        <section className="rounded-xl border border-blue-100 bg-blue-50 p-5 text-center">
+          {countdown !== null && countdown > 0 && (
+            <div className="py-4">
+              <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">
+                El sorteo comienza en
+              </p>
+              <div className="mt-2 text-7xl font-bold tabular-nums text-blue-700">
+                {countdown}
+              </div>
+            </div>
+          )}
+
+          {drawing && (
+            <div className="py-8 text-lg font-semibold text-blue-700">
+              Eligiendo ganador...
+            </div>
+          )}
+
+          {!drawInProgress && winner && (
+            <div className="space-y-2 py-2">
+              <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+                Ganador del sorteo
+              </p>
+              <h2 className="text-3xl font-bold text-gray-900">
+                {winner.winner?.customerName || "Sin nombre"}
+              </h2>
+              <p className="text-xl font-semibold text-gray-700">
+                {winner.winner?.customerPhone || "Sin número de teléfono"}
+              </p>
+              <p className="text-sm text-gray-500">
+                Chance #{winner.chanceNumber} de {winner.eligibleEntryCount}
+                {winner.drawnAt
+                  ? ` · ${formatTucumanDateTime(winner.drawnAt)}`
+                  : ""}
+              </p>
+            </div>
+          )}
+
+          {!drawInProgress && !winner && (
+            <p className="py-3 text-sm text-gray-600">
+              Cada carga válida de junio y julio representa una chance.
+            </p>
+          )}
+
+          {!drawInProgress && (
+            <button
+              className="mt-3 rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              type="button"
+              disabled={loading}
+              onClick={activateDraw}
+            >
+              Activar sorteo
+            </button>
+          )}
+        </section>
 
         <div className="grid gap-2 sm:grid-cols-2">
           <input

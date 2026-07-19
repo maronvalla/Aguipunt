@@ -1,5 +1,6 @@
 const express = require("express");
 const ExcelJS = require("exceljs");
+const { randomInt } = require("crypto");
 const dbDefault = require("../db");
 const requireRoleDefault = require("../middleware/requireRole");
 const {
@@ -8,9 +9,38 @@ const {
   getCampaignRange,
 } = require("../services/raffleCampaign");
 
+const RAFFLE_RESULT_KEY = "raffle_2026_june_july_result";
+
+const buildEntriesSql = (where = "", order = 'e."createdAt" DESC, e.id DESC') =>
+  `WITH raffle_entries AS (
+     SELECT t.id,
+            ROW_NUMBER() OVER (ORDER BY t.createdat ASC, t.id ASC)::int AS "chanceNumber",
+            to_char(t.createdat, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS "createdAt",
+            t.points,
+            t.operations,
+            t.userid AS "userId",
+            t.username AS "userName",
+            t.customerid AS "customerId",
+            c.dni AS "customerDni",
+            c.nombre AS "customerName",
+            c.celular AS "customerPhone"
+     FROM transactions t
+     JOIN customers c ON c.id = t.customerid
+     WHERE t.type = 'LOAD'
+       AND t.voidedat IS NULL
+       AND t.createdat >= $1
+       AND t.createdat < $2
+   )
+   SELECT *
+   FROM raffle_entries e
+   ${where}
+   ORDER BY ${order}`;
+
 const createRaffleRouter = (deps = {}) => {
   const db = deps.db || dbDefault;
   const requireRole = deps.requireRole || requireRoleDefault;
+  const pickRandomIndex = deps.randomInt || randomInt;
+  const getNow = deps.getNow || (() => new Date());
   const router = express.Router();
 
   router.get("/entries", requireRole("admin"), async (req, res) => {
@@ -42,43 +72,81 @@ const createRaffleRouter = (deps = {}) => {
     const where = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
 
     try {
-      const result = await db.all(
-        `WITH raffle_entries AS (
-           SELECT t.id,
-                  ROW_NUMBER() OVER (ORDER BY t.createdat ASC, t.id ASC)::int AS "chanceNumber",
-                  to_char(t.createdat, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS "createdAt",
-                  t.points,
-                  t.operations,
-                  t.userid AS "userId",
-                  t.username AS "userName",
-                  t.customerid AS "customerId",
-                  c.dni AS "customerDni",
-                  c.nombre AS "customerName",
-                  c.celular AS "customerPhone"
-           FROM transactions t
-           JOIN customers c ON c.id = t.customerid
-           WHERE t.type = 'LOAD'
-             AND t.voidedat IS NULL
-             AND t.createdat >= $1
-             AND t.createdat < $2
-         )
-         SELECT *
-         FROM raffle_entries e
-         ${where}
-         ORDER BY e."createdAt" DESC, e.id DESC`,
-        params
-      );
+      const result = await db.all(buildEntriesSql(where), params);
 
       return res.json({
         campaign: {
           from: CAMPAIGN_FROM,
           to: CAMPAIGN_TO,
+          effectiveTo: range.endUtc.toISO(),
         },
         items: result?.rows || [],
       });
     } catch (err) {
       console.error("Error al cargar sorteo:", err);
       return res.status(500).json({ message: "Error al cargar sorteo." });
+    }
+  });
+
+  router.get("/result", requireRole("admin"), async (_req, res) => {
+    try {
+      const row = await db.get("SELECT value FROM settings WHERE key = $1", [
+        RAFFLE_RESULT_KEY,
+      ]);
+      if (!row?.value) return res.json({ result: null });
+
+      try {
+        return res.json({ result: JSON.parse(row.value) });
+      } catch {
+        console.error("Resultado de sorteo guardado con formato inválido.");
+        return res.json({ result: null });
+      }
+    } catch (err) {
+      console.error("Error al cargar ganador del sorteo:", err);
+      return res.status(500).json({ message: "Error al cargar el ganador." });
+    }
+  });
+
+  router.post("/draw", requireRole("admin"), async (_req, res) => {
+    const now = getNow();
+    const range = getCampaignRange({ now });
+
+    try {
+      const result = await db.all(
+        buildEntriesSql("", 'e."chanceNumber" ASC'),
+        [range.startSql, range.endSql]
+      );
+      const entries = result?.rows || [];
+      if (entries.length === 0) {
+        return res.status(409).json({
+          message: "No hay cargas válidas para realizar el sorteo.",
+        });
+      }
+
+      const selected = entries[pickRandomIndex(entries.length)];
+      const drawResult = {
+        winner: {
+          transactionId: selected.id,
+          customerId: selected.customerId,
+          customerName: selected.customerName,
+          customerPhone: selected.customerPhone,
+        },
+        chanceNumber: selected.chanceNumber,
+        eligibleEntryCount: entries.length,
+        drawnAt: new Date(now).toISOString(),
+      };
+
+      await db.run(
+        `INSERT INTO settings (key, value)
+         VALUES ($1, $2)
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+        [RAFFLE_RESULT_KEY, JSON.stringify(drawResult)]
+      );
+
+      return res.json(drawResult);
+    } catch (err) {
+      console.error("Error al realizar sorteo:", err);
+      return res.status(500).json({ message: "Error al realizar el sorteo." });
     }
   });
 
@@ -133,7 +201,7 @@ const createRaffleRouter = (deps = {}) => {
         );
         res.setHeader(
           "Content-Disposition",
-          'attachment; filename="nuevos-registrados-junio-2026.xlsx"'
+          'attachment; filename="nuevos-registrados-junio-julio-2026.xlsx"'
         );
         await workbook.xlsx.write(res);
         res.end();
@@ -153,3 +221,4 @@ module.exports = createRaffleRouter();
 module.exports.createRaffleRouter = createRaffleRouter;
 module.exports.CAMPAIGN_FROM = CAMPAIGN_FROM;
 module.exports.CAMPAIGN_TO = CAMPAIGN_TO;
+module.exports.RAFFLE_RESULT_KEY = RAFFLE_RESULT_KEY;

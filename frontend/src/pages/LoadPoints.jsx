@@ -158,7 +158,7 @@ const openRaffleReceiptPrint = ({
       <body>
         <div class="receipt">
           <div class="title">Aguipuntos</div>
-          <div class="subtitle">Ticket sorteo junio</div>
+          <div class="subtitle">Ticket sorteo junio y julio</div>
           <div class="row"><span class="label">Fecha:</span> ${formattedDate}</div>
           <div class="row"><span class="label">Cliente:</span> ${safeCustomerName}</div>
           <div class="divider"></div>
@@ -166,7 +166,7 @@ const openRaffleReceiptPrint = ({
           <div class="row"><span class="label">Puntos cargados:</span> ${safePointsLoaded}</div>
           <div class="chance">Chances hasta ahora: ${safeChanceCount}</div>
           <div class="divider"></div>
-          <div class="subtitle">Durante junio, cada carga suma una chance.</div>
+          <div class="subtitle">Durante junio y julio, cada carga suma una chance.</div>
           <div class="subtitle">Avenida Mitre 577 - Aguilares</div>
         </div>
       </body>

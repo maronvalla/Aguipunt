@@ -5,7 +5,7 @@ export default function Menu() {
     window.location.href = "/login";
   };
 
-  const role = localStorage.getItem("role") || "admin";
+  const role = localStorage.getItem("role") || "";
   const isAdmin = role === "admin";
 
   return (

@@ -13,7 +13,7 @@ export default function Login() {
       );
       const res = await api.post("/api/auth/login", { username, password });
       localStorage.setItem("token", res.data.token);
-      localStorage.setItem("role", res.data.role || "admin");
+      localStorage.setItem("role", res.data.role || "");
       window.location.href = "/menu";
     } catch (error) {
       const message =

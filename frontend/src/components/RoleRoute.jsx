@@ -5,7 +5,7 @@ export default function RoleRoute({ children, role }) {
   const token = localStorage.getItem("token");
   if (!token) return <Navigate to="/login" />;
 
-  const currentRole = localStorage.getItem("role") || "admin";
+  const currentRole = localStorage.getItem("role") || "";
   if (role && currentRole !== role) return <AccessDenied />;
 
   return children;
