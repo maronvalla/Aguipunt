@@ -55,6 +55,7 @@ export default function Raffle() {
   const [topLoadersLoading, setTopLoadersLoading] = useState(false);
   const [topLoadersError, setTopLoadersError] = useState("");
   const [clearingWinner, setClearingWinner] = useState(false);
+  const [showWinnerDetails, setShowWinnerDetails] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const activeRequest = useRef(null);
@@ -102,6 +103,7 @@ export default function Raffle() {
     try {
       const res = await api.get("/api/raffle/result");
       setWinner(res.data?.result || null);
+      setShowWinnerDetails(false);
     } catch (e) {
       setError(e?.response?.data?.message || "Error al cargar el ganador.");
     }
@@ -128,6 +130,7 @@ export default function Raffle() {
     try {
       const res = await api.post("/api/raffle/draw");
       setWinner(res.data || null);
+      setShowWinnerDetails(false);
       fetchTopLoaders();
     } catch (e) {
       const message = e?.response?.data?.message || "Error al realizar el sorteo.";
@@ -143,6 +146,7 @@ export default function Raffle() {
     setError("");
     setDrawError("");
     setShowExperience(true);
+    setShowWinnerDetails(false);
     drawRequestStarted.current = false;
     setCountdown(10);
   };
@@ -159,12 +163,18 @@ export default function Raffle() {
       await api.delete("/api/raffle/result");
       setWinner(null);
       setShowExperience(false);
+      setShowWinnerDetails(false);
       setDrawError("");
     } catch (e) {
       setError(e?.response?.data?.message || "Error al limpiar el ganador.");
     } finally {
       setClearingWinner(false);
     }
+  };
+
+  const consultWinnerData = () => {
+    setShowExperience(false);
+    setShowWinnerDetails(true);
   };
 
   const downloadNewRegistrations = async () => {
@@ -272,9 +282,28 @@ export default function Raffle() {
               <h2 className="text-3xl font-bold text-gray-900">
                 {winner.winner?.customerName || "Sin nombre"}
               </h2>
-              <p className="text-xl font-semibold text-gray-700">
-                {winner.winner?.customerPhone || "Sin número de teléfono"}
-              </p>
+              {showWinnerDetails ? (
+                <div className="space-y-1">
+                  <p className="text-xl font-semibold text-gray-700">
+                    {winner.winner?.customerPhone || "Sin número de teléfono"}
+                  </p>
+                  <button
+                    type="button"
+                    className="text-xs font-medium text-slate-400 underline hover:text-slate-600"
+                    onClick={() => setShowWinnerDetails(false)}
+                  >
+                    Ocultar datos
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
+                  onClick={() => setShowWinnerDetails(true)}
+                >
+                  Consultar datos
+                </button>
+              )}
               <p className="text-sm text-gray-500">
                 Chance #{winner.chanceNumber} de {winner.eligibleEntryCount}
                 {winner.drawnAt
@@ -509,9 +538,6 @@ export default function Raffle() {
                 <h2 className="mt-4 break-words text-4xl font-black leading-tight sm:text-7xl">
                   {winner.winner?.customerName || "Sin nombre"}
                 </h2>
-                <p className="mt-4 text-2xl font-bold text-cyan-100 sm:text-4xl">
-                  {winner.winner?.customerPhone || "Sin número de teléfono"}
-                </p>
                 <div className="mt-6 inline-flex flex-wrap items-center justify-center gap-2 rounded-full bg-slate-950/40 px-5 py-2 text-sm text-slate-200 sm:text-base">
                   <span>Chance #{winner.chanceNumber}</span>
                   <span className="text-cyan-300">•</span>
@@ -521,9 +547,9 @@ export default function Raffle() {
                   <button
                     type="button"
                     className="rounded-xl bg-white px-7 py-3 font-bold text-blue-950 shadow-lg transition hover:-translate-y-0.5 hover:bg-cyan-50"
-                    onClick={() => setShowExperience(false)}
+                    onClick={consultWinnerData}
                   >
-                    Volver al sorteo
+                    Consultar datos
                   </button>
                   <button
                     type="button"
