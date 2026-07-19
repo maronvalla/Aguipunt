@@ -54,6 +54,7 @@ export default function Raffle() {
   const [topLoaders, setTopLoaders] = useState([]);
   const [topLoadersLoading, setTopLoadersLoading] = useState(false);
   const [topLoadersError, setTopLoadersError] = useState("");
+  const [clearingWinner, setClearingWinner] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const activeRequest = useRef(null);
@@ -144,6 +145,26 @@ export default function Raffle() {
     setShowExperience(true);
     drawRequestStarted.current = false;
     setCountdown(10);
+  };
+
+  const clearWinner = async () => {
+    const confirmed = window.confirm(
+      "¿Querés limpiar el ganador guardado? Las cargas y chances no se modificarán."
+    );
+    if (!confirmed) return;
+
+    setClearingWinner(true);
+    setError("");
+    try {
+      await api.delete("/api/raffle/result");
+      setWinner(null);
+      setShowExperience(false);
+      setDrawError("");
+    } catch (e) {
+      setError(e?.response?.data?.message || "Error al limpiar el ganador.");
+    } finally {
+      setClearingWinner(false);
+    }
   };
 
   const downloadNewRegistrations = async () => {
@@ -270,14 +291,26 @@ export default function Raffle() {
           )}
 
           {!drawInProgress && (
-            <button
-              className="mt-3 rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-              type="button"
-              disabled={loading}
-              onClick={activateDraw}
-            >
-              Activar sorteo
-            </button>
+            <div className="mt-3 flex flex-col items-center justify-center gap-2 sm:flex-row">
+              <button
+                className="rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                type="button"
+                disabled={loading || clearingWinner}
+                onClick={activateDraw}
+              >
+                Activar sorteo
+              </button>
+              {winner && (
+                <button
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-slate-500 transition hover:bg-white hover:text-red-600 disabled:opacity-50"
+                  type="button"
+                  disabled={clearingWinner}
+                  onClick={clearWinner}
+                >
+                  {clearingWinner ? "Limpiando..." : "Limpiar ganador"}
+                </button>
+              )}
+            </div>
           )}
         </section>
 

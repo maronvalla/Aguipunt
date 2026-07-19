@@ -376,6 +376,14 @@ const runDevQuery = async (sql, params = []) => {
     return { rows: [], rowCount: before - devState.users.length };
   }
 
+  if (normalized.startsWith("DELETE FROM settings WHERE key =")) {
+    const key = params[0];
+    const before = devState.settings.length;
+    devState.settings = devState.settings.filter((item) => item.key !== key);
+    saveDevState();
+    return { rows: [], rowCount: before - devState.settings.length };
+  }
+
   if (normalized.startsWith("INSERT INTO settings")) {
     const [key, value] = params;
     const existing = devState.settings.find((item) => item.key === key);

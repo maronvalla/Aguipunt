@@ -107,6 +107,16 @@ const createRaffleRouter = (deps = {}) => {
     }
   });
 
+  router.delete("/result", requireRole("admin"), async (_req, res) => {
+    try {
+      await db.run("DELETE FROM settings WHERE key = $1", [RAFFLE_RESULT_KEY]);
+      return res.json({ ok: true });
+    } catch (err) {
+      console.error("Error al limpiar ganador del sorteo:", err);
+      return res.status(500).json({ message: "Error al limpiar el ganador." });
+    }
+  });
+
   router.get("/top-loaders", requireRole("admin"), async (_req, res) => {
     const range = getCampaignRange({ now: getNow() });
 

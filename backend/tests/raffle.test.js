@@ -297,7 +297,11 @@ const makeDrawDb = (entries = []) => {
     all: async () => ({ rows: entries }),
     get: async (_sql, params) =>
       params[0] && storedValue ? { value: storedValue } : null,
-    run: async (_sql, params) => {
+    run: async (sql, params) => {
+      if (sql.startsWith("DELETE FROM settings")) {
+        storedValue = null;
+        return { rows: [], rowCount: 1 };
+      }
       storedValue = params[1];
       return { rows: [], rowCount: 1 };
     },
@@ -382,6 +386,36 @@ test("POST /draw replaces the previously saved winner", async () => {
 
   assert.equal(db.stored().winner.customerName, "Bruno");
   assert.equal(db.stored().chanceNumber, 2);
+});
+
+test("DELETE /result clears only the saved raffle winner", async () => {
+  const db = makeDrawDb([
+    { id: 30, chanceNumber: 1, customerName: "Ganador de prueba" },
+  ]);
+  const app = express();
+  app.use(
+    "/api/raffle",
+    createRaffleRouter({
+      db,
+      requireRole: allowAllRole,
+      randomInt: () => 0,
+      getNow: () => new Date("2026-07-18T15:30:45.000Z"),
+    })
+  );
+
+  await requestJson(app, "/api/raffle/draw", { method: "POST" });
+  assert.ok(db.stored());
+
+  const cleared = await requestJson(app, "/api/raffle/result", {
+    method: "DELETE",
+  });
+  assert.equal(cleared.status, 200);
+  assert.deepEqual(cleared.json, { ok: true });
+  assert.equal(db.stored(), null);
+
+  const saved = await requestJson(app, "/api/raffle/result");
+  assert.equal(saved.status, 200);
+  assert.equal(saved.json.result, null);
 });
 
 test("POST /draw reports when there are no eligible entries", async () => {
