@@ -1,34 +1,52 @@
 # Aguipuntos
 
-Nota de encoding: Todos los archivos deben guardarse en UTF-8 (sin BOM).
-Nota de prueba: cambio sin impacto funcional para verificar la rama.
+## Arquitectura de producción
+
+- Frontend React/Vite: `https://aguipunt.vercel.app`
+- API: Supabase Edge Function `api`
+- Base de datos: Supabase PostgreSQL
+- Tareas programadas: Supabase Cron
+
+Railway ya no forma parte de la arquitectura de producción.
 
 ## Desarrollo local
 
-Backend:
-- `cd backend`
-- `npm i`
-- `npm start`
-
 Frontend:
-- `cd frontend`
-- `npm i`
-- `npm run dev`
 
-## Deploy
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-Backend (Railway/Render):
-- Variables de entorno:
-  - `PORT`
-  - `JWT_SECRET`
-  - `CORS_ORIGIN` (lista separada por coma, ej: `https://tu-frontend.com`)
-  - `DATABASE_URL` (cadena de conexiÃ³n PostgreSQL de Railway)
-- Health check: `GET /api/health`
+La URL predeterminada de la API es:
 
-Frontend (Vercel/Netlify):
-- Variable de entorno:
-  - `VITE_API_URL` (ej: `https://tu-backend.com/api`)
+```text
+https://dqymnwbfnuimjfdnwaqb.supabase.co/functions/v1/api
+```
 
-## Health check
+Puede reemplazarse localmente con `VITE_API_URL`.
 
-- `GET /api/health` retorna `{ ok: true, time: "..." }`
+El backend Express dentro de `backend/` se conserva temporalmente como referencia
+durante la transición, pero Vercel ya no lo compila ni lo despliega.
+
+## Supabase
+
+Validar la Edge Function:
+
+```bash
+npx deno check --config supabase/functions/api/deno.json supabase/functions/api/index.ts
+```
+
+Desplegar funciones y migraciones:
+
+```bash
+npx supabase functions deploy api --use-api --no-verify-jwt
+npx supabase db push
+```
+
+Health check:
+
+```text
+GET /api/health
+```

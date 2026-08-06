@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "hono": "npm:hono@4.9.2",
+    "postgres": "npm:postgres@3.4.7",
+    "bcryptjs": "npm:bcryptjs@3.0.2",
+    "jsonwebtoken": "npm:jsonwebtoken@9.0.2",
+    "xlsx": "npm:xlsx@0.18.5"
+  }
+}

@@ -37,3 +37,5 @@ backend/data/
 
 # allow sqlite db snapshot (manual)
 !backend/data/aguipuntos.db
+.vercel
+.env*
